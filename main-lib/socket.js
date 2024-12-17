@@ -92,7 +92,7 @@ async function relay() {
     // stop service on old worker
     const oldw = services_map[service.name];
     if (service.name in services_map) {
-      if (oldw != best_worker) {
+      if (oldw != best_worker && oldw in workers) {
         const { socket } = workers[oldw];
         if (socket.connected) {
           socket.emit("stop", service.name);

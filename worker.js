@@ -15,7 +15,7 @@ let identify = false;
   while (blink) {
     let ram = 0;
     for (const service in services) {
-      const { open, config } = services[service];
+      const { open, config } = await services[service];
       if (open) ram += config.ram;
     }
     const sleep = 1000 * (1 - ram / worker.ram);
@@ -73,7 +73,7 @@ async function start(service, port) {
   const proc = spawn("sh", ["-c", start], { cwd });
   proc.on("exit", code => {
     if (code != 0 && code != null) socket.emit("status", service, 3);
-    if (service in services) services[service].open = false;
+    if (service in services) (await services[service]).open = false;
   });
   proc.on("error", e => {
     console.error(e);
@@ -81,17 +81,19 @@ async function start(service, port) {
   });
   proc.stderr.pipe(process.stderr);
 
-  const spid = proc.pid;
-  const sppd = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
-  const pid = sppd.stdout.toString().trim();
+  services[service] = new Promise(res => {
+    const spid = proc.pid;
+    const sppd = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
+    const pid = sppd.stdout.toString().trim();
 
-  services[service] = { config, proc, pid, "open": true };
+    res({ config, proc, pid, "open": true });
+  });
   socket.emit("status", service, 4);
 }
 
 async function stop(service) {
   console.log("stopping", service);
-  const { config, proc, pid, open } = services[service];
+  const { config, proc, pid, open } = await services[service];
   if (open) {
     const p = new Promise(r => proc.once("exit", r));
 
@@ -101,7 +103,7 @@ async function stop(service) {
     spawnSync("sh", ["-c", stop]);
 
     await p;
-    services[service].open = false;
+    (await services[service]).open = false;
   }
   delete services[service];
 }
