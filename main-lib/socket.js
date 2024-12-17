@@ -32,7 +32,8 @@ server.on("connection", socket => {
   socket.on("disconnect", () => {
     for (const service of workers[socket.id].services) {
       delete services_map[service.name];
-      service_status[service.name] = 0;
+      if (service_status[service.name] != 3)
+        service_status[service.name] = 0;
     }
     delete workers[socket.id];
     schedule_relay();
