@@ -1,0 +1,29 @@
+{
+  "name": "gxlg-cluster",
+  "version": "1.0.0",
+  "description": "The software used to control my cluster",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gXLg-dev/gxlg-cluster.git"
+  },
+  "author": "gXLg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gXLg-dev/gxlg-cluster/issues"
+  },
+  "homepage": "https://github.com/gXLg-dev/gxlg-cluster#readme",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "bufferutil": "^4.0.8",
+    "jsonwebtoken": "^9.0.2",
+    "nulls": "^2.1.2",
+    "rpio": "^2.4.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "utf-8-validate": "^6.0.5"
+  }
+}

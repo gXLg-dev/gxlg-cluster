@@ -1,0 +1,23 @@
+<form class="item" null-api="$main-lib/panel/js/add.js" method="POST" action="/api/add_service">
+  <div>
+    <img src="/static/service.png"> Add a service
+  </div>
+  <label>
+    Name:
+    <input type="text" name="name">
+  </label>
+  <input type="submit" value="Add">
+</form>
+
+<form class="item" null-api="$main-lib/panel/js/execute.js" method="POST" action="/api/execute">
+  <div>
+    <img src="/static/terminal.png"> Execute a command
+  </div>
+  <div>
+    <pre class="terminal" null-data="$main-lib/panel/js/output.js"></pre>
+  </div>
+  <label>
+    <input type="text" name="input">
+  </label>
+  <input type="submit" value="Run">
+</form>

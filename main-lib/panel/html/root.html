@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+
+    <style>
+      [data-status] {
+        border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+      }
+
+      [data-status="0"] { background-color: lightgrey; }
+      [data-status="1"] { background-color: lightblue; }
+      [data-status="2"] { background-color: gold; }
+      [data-status="3"] { background-color: coral; }
+      [data-status="4"] { background-color: lightgreen; }
+
+      .item {
+        /*display: inline-block;*/
+        border: 1px solid black;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px;
+      }
+
+      a { color: black; }
+
+      .button { display: inline-block; }
+
+      button>img { position: relative; top: 2px; }
+      img { height: 16px; }
+      * { font-size: 22px; }
+
+      .nav {
+        display: flex;
+        border-bottom: 1px solid black;
+        padding: 20px;
+      }
+      .nav>span { flex: 1; display: flex; justify-content: center; }
+
+      .content {
+        padding: 20px;
+      }
+
+      .terminal {
+        font-size: 8px;
+        background-color: teal;
+        color: white;
+        border-radius: 5px;
+        padding: 8px;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div class="nav">
+      <span><a href="/workers"><img src="/static/raspberry.png"> Workers</a></span>
+      <span><a href="/services"><img src="/static/service.png"> Services</a></span>
+      <span><a href="/tools"><img src="/static/tools.png"> Tools</a></span>
+    </div>
+    <div class="content" null-container="req=>req.auth?({'/services':'services.html','/tools':'tools.html'}[req.path]??'workers.html'):'login.html'"></div>
+  </body>
+</html>
