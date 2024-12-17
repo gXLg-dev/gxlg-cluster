@@ -81,7 +81,7 @@ async function start(service, port) {
   });
   proc.stderr.pipe(process.stderr);
 
-  services[service] = { config, proc, proc.pid, "open": true };
+  services[service] = { config, proc, "pid": proc.pid, "open": true };
   socket.emit("status", service, 4);
 }
 
