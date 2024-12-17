@@ -79,10 +79,12 @@ async function start(service, port) {
     }
   });
   proc.on("error", e => {
-    console.error(e);
+    console.error("Error from", service, e);
     socket.emit("status", service, 3);
   });
-  proc.stderr.pipe(process.stderr);
+  proc.stderr.on("data", d => {
+    process.stderr.write(service + " ||| " + data.toString());
+  });
 
   services[service] = new Promise(res => {
     const spid = proc.pid;
@@ -95,7 +97,7 @@ async function start(service, port) {
 }
 
 async function stop(service) {
-  console.log("stopping", service);
+  console.log("Stopping", service);
   const s = await services[service];
   const { config, proc, pid, open } = s;
   if (open) {
