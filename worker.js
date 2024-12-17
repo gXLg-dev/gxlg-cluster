@@ -83,7 +83,7 @@ async function start(service, port) {
     socket.emit("status", service, 3);
   });
   proc.stderr.on("data", d => {
-    process.stderr.write(service + " ||| " + data.toString());
+    process.stderr.write(service + " ||| " + d.toString());
   });
 
   services[service] = new Promise(res => {
