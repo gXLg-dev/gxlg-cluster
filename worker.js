@@ -29,7 +29,6 @@ let identify = false;
     }
     rpio.write(37, rpio.LOW);
   }
-  rpio.close(37);
   console.log("end");
 })();
 
@@ -50,16 +49,18 @@ async function start(service, port) {
 
   socket.emit("status", service, 1);
   if (config.dependencies) {
-    const i = spawnSync("sh", ["-c", [worker.install, ...config.dependencies].join(" ")]);
-    if (i.status != 0) {
+    const i = spawn("sh", ["-c", [worker.install, ...config.dependencies].join(" ")]);
+    const j = await new Promise(r => i.once("exit", c => r(c)));
+    if (j != 0) {
       socket.emit("status", service, 3);
       return;
     }
   }
   if (config.setup) {
     for (const s of config.setup) {
-      const i = spawnSync("sh", ["-c", s]);
-      if (i.status != 0) {
+      const i = spawn("sh", ["-c", s]);
+      const j = await new Promise(r => i.once("exit", c => r(c)));
+      if (j != 0) {
         socket.emit("status", service, 3);
         return;
       }
@@ -115,6 +116,8 @@ async function exit() {
   await stop_all();
   socket.close();
   blink = false;
+  rpio.write(37, rpio.LOW);
+  rpio.close(37);
 }
 
 socket.on("disconnect", async () => {
