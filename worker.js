@@ -39,7 +39,7 @@ socket.on("identify", () => {
 socket.on("start", (service, port) => start(service, port));
 socket.on("stop", async service => {
   socket.emit("status", service, 2);
-  await stop(service);
+  if (service in services) await stop(service);
   socket.emit("stopped-" + service);
 });
 
