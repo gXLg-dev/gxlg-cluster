@@ -18,14 +18,14 @@ let identify = false;
       const { open, config } = services[service];
       if (open) ram += config.ram;
     }
-    const sleep = parseInt(1000 * (1 - ram / worker.ram));
-    rpio.msleep(sleep);
+    const sleep = 1000 * (1 - ram / worker.ram);
+    await new Promise(r => setTimeout(r, sleep))
     rpio.write(37, rpio.HIGH);
     if (identify) {
-      rpio.msleep(4000);
+      await new Promise(r => setTimeout(r, 4000))
       identify = false;
     } else {
-      rpio.msleep(100);
+      await new Promise(r => setTimeout(r, 100))
     }
     rpio.write(37, rpio.LOW);
   }
