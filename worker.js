@@ -18,8 +18,7 @@ let identify = false;
       const { open, config } = services[service];
       if (open) ram += config.ram;
     }
-    const sleep = 1000 * (1 - ram / worker.ram);
-    await new Promise(r => setTimeout(r, sleep));
+    const sleep = parseInt(1000 * (1 - ram / worker.ram));
     rpio.msleep(sleep);
     rpio.write(37, rpio.HIGH);
     if (identify) {
