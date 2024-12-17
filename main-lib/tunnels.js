@@ -123,14 +123,7 @@ async function switch_tunnels() {
     );
     records.push(record);
   }
-  // add the panel website to cloudflare
-  ingress.push(
-    "  - hostname: " + panel.record,
-    "    service: http://127.0.0.1:8080",
-    "  - service: http_status:404"
-  );
-  records.push(panel.record);
-
+  ingress.push("  - service: http_status:404");
   fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
   // start the second tunnel

@@ -80,11 +80,16 @@ async function start(service, port) {
   });
   proc.stderr.pipe(process.stderr);
 
-  services[service] = { config, proc, "pid": proc.pid, "open": true };
+  const spid = proc.pid;
+  const sppd = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
+  const pid = sppd.stdout.toString().trim();
+
+  services[service] = { config, proc, pid, "open": true };
   socket.emit("status", service, 4);
 }
 
 async function stop(service) {
+  console.log("stopping", service);
   const { config, proc, pid, open } = services[service];
   if (open) {
     const p = new Promise(r => proc.once("exit", r));
