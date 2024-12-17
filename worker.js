@@ -70,7 +70,7 @@ async function start(service, port) {
   let start = config.start;
   if (port) start = start.replaceAll("{port}", port);
   console.log("Starting", service);
-  const proc = spawn("firejail", ["--rlimit-as=" + config.ram + "m", "--", "sh", "-c", start], { cwd });
+  const proc = spawn("sh", ["-c", start], { cwd });
   proc.on("exit", code => {
     if (code != 0 && code != null) socket.emit("status", service, 3);
     if (service in services) services[service].open = false;
@@ -80,16 +80,8 @@ async function start(service, port) {
     socket.emit("status", service, 3);
   });
   proc.stderr.pipe(process.stderr);
-  await new Promise(r => setTimeout(r, 1000));
 
-  // acquire PID of child process (child of firejail -> child of shell)
-  const fpid = proc.pid;
-  const fps = spawnSync("ps", ["--ppid", fpid, "-o", "pid:1="]);
-  const spid = fps.stdout.toString().trim();
-  const sps = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
-  const pid = sps.stdout.toString().trim();
-
-  services[service] = { config, proc, pid, "open": true };
+  services[service] = { config, proc, proc.pid, "open": true };
   socket.emit("status", service, 4);
 }
 
