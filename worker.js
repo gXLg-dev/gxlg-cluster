@@ -69,6 +69,7 @@ async function start(service, port) {
 
   let start = config.start;
   if (port) start = start.replaceAll("{port}", port);
+  console.log("Starting", config.name);
   const proc = spawn("firejail", ["--rlimit-as=" + config.ram + "m", "--", "sh", "-c", start], { cwd });
   proc.on("exit", code => {
     if (code != 0 && code != null) socket.emit("status", service, 3);
