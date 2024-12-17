@@ -71,9 +71,12 @@ async function start(service, port) {
   if (port) start = start.replaceAll("{port}", port);
   console.log("Starting", service);
   const proc = spawn("sh", ["-c", start], { cwd });
-  proc.on("exit", code => {
+  proc.on("exit", async code => {
     if (code != 0 && code != null) socket.emit("status", service, 3);
-    if (service in services) (await services[service]).open = false;
+    if (service in services) {
+      const s = await services[service];
+      s.open = false;
+    }
   });
   proc.on("error", e => {
     console.error(e);
@@ -93,7 +96,8 @@ async function start(service, port) {
 
 async function stop(service) {
   console.log("stopping", service);
-  const { config, proc, pid, open } = await services[service];
+  const s = await services[service];
+  const { config, proc, pid, open } = s;
   if (open) {
     const p = new Promise(r => proc.once("exit", r));
 
@@ -103,7 +107,7 @@ async function stop(service) {
     spawnSync("sh", ["-c", stop]);
 
     await p;
-    (await services[service]).open = false;
+    s.open = false;
   }
   delete services[service];
 }
