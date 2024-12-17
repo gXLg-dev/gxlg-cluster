@@ -100,19 +100,27 @@ async function stop(service) {
   delete services[service];
 }
 
-socket.on("disconnect", async () => {
+async function stop_all() {
   for (const service in services) {
     await stop(service);
   }
-});
+}
 
-socket.on("shutdown", () => {
+async function exit() {
+  await stop_all();
   socket.close();
   blink = false;
+}
+
+socket.on("disconnect", async () => {
+  await stop_all();
 });
 
-process.on("SIGINT", () => {
-  socket.close();
-  blink = false;
+socket.on("shutdown", async () => {
+  await exit();
+});
+
+process.on("SIGINT", async () => {
+  await exit();
 });
 
