@@ -82,8 +82,11 @@ async function start(service, port) {
     console.error("Error from", service, e);
     socket.emit("status", service, 3);
   });
+  proc.stdout.on("data", d => {
+    process.stdout.write(service + " |v| " + d.toString());
+  });
   proc.stderr.on("data", d => {
-    process.stderr.write(service + " ||| " + d.toString());
+    process.stdout.write(service + " |x| " + d.toString());
   });
 
   services[service] = new Promise(res => {
