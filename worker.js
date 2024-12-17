@@ -1,7 +1,7 @@
 const { io } = require("socket.io-client");
 const fs = require("fs");
 const { spawn, spawnSync } = require("child_process");
-//const rpio = require("rpio");
+const rpio = require("rpio");
 
 const { main, worker } = require("./common-lib/config.js");
 
@@ -11,7 +11,7 @@ const services = {};
 let blink = true;
 let identify = false;
 (async () => {
-  //rpio.open(37, rpio.OUTPUT, rpio.LOW);
+  rpio.open(37, rpio.OUTPUT, rpio.LOW);
   while (blink) {
     let ram = 0;
     for (const service in services) {
@@ -20,19 +20,17 @@ let identify = false;
     }
     const sleep = 1000 * (1 - ram / worker.ram);
     await new Promise(r => setTimeout(r, sleep));
-    //rpio.msleep(sleep);
-    //rpio.write(37, rpio.HIGH);
+    rpio.msleep(sleep);
+    rpio.write(37, rpio.HIGH);
     if (identify) {
-      console.log("identify");
-      //rpio.msleep(4000);
+      rpio.msleep(4000);
       identify = false;
     } else {
-      console.log("blink");
-      //rpio.msleep(100);
+      rpio.msleep(100);
     }
-    //rpio.write(37, rpio.LOW);
+    rpio.write(37, rpio.LOW);
   }
-  //rpio.close(37);
+  rpio.close(37);
   console.log("end");
 })();
 
@@ -71,8 +69,7 @@ async function start(service, port) {
 
   let start = config.start;
   if (port) start = start.replaceAll("{port}", port);
-  //const proc = spawn("firejail", ["--rlimit-as=" + config.ram + "m", "--", "sh", "-c", start], { cwd });
-  const proc = spawn("sh", ["-c", start], { cwd });
+  const proc = spawn("firejail", ["--rlimit-as=" + config.ram + "m", "--", "sh", "-c", start], { cwd });
   proc.on("exit", code => {
     if (code != 0 && code != null) socket.emit("status", service, 3);
     if (service in services) services[service].open = false;
@@ -86,11 +83,10 @@ async function start(service, port) {
 
   // acquire PID of child process (child of firejail -> child of shell)
   const fpid = proc.pid;
-  //const fps = spawnSync("ps", ["--ppid", fpid, "-o", "pid:1="]);
-  //const spid = fps.stdout.toString().trim();
-  //const sps = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
-  //const pid = sps.stdout.toString().trim();
-  const pid = fpid;
+  const fps = spawnSync("ps", ["--ppid", fpid, "-o", "pid:1="]);
+  const spid = fps.stdout.toString().trim();
+  const sps = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
+  const pid = sps.stdout.toString().trim();
 
   services[service] = { config, proc, pid, "open": true };
   socket.emit("status", service, 4);

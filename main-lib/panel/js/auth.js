@@ -10,7 +10,7 @@ function set_cookie(res, password) {
   const options = {
     "httpOnly": true,
     "sameSite": true,
-    //"secure": true,
+    "secure": true,
     "maxAge": LOGIN_DURATION
   };
   res.cookie("token", token, options);
