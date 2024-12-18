@@ -114,8 +114,12 @@ async function stop(service) {
     stop = stop.replaceAll("{pid}", pid);
     const p = new Promise(r => proc.once("exit", r));
     spawnSync("sh", ["-c", stop]);
-    spawnSync("wait", [pid]);
+    const kill = setTimeout(() => {
+      console.log("Force killing", service);
+      proc.kill("KILL");
+    }, 10000);
     await p;
+    clearTimeout(kill);
     s.open = false;
     console.log("Killed", service, "(" + pid + ")");
   }
