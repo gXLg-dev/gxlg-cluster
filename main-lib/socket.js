@@ -76,7 +76,7 @@ function enqueue(type, data) {
     });
   } else if (type == "shutdown") {
     const { worker } = data;
-    a.add(async () => {
+    q.add(async () => {
       worker.socket.emit("shutdown");
     });
   }
