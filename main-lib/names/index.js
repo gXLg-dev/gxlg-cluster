@@ -6,5 +6,5 @@ const nou = fs.readFileSync("main-lib/names/nouns.txt", "utf-8").trim().split("\
 module.exports = () => {
   const a = adj[parseInt(Math.random() * adj.length)];
   const n = nou[parseInt(Math.random() * nou.length)];
-  return a + " " + b;
+  return a + " " + n;
 };
