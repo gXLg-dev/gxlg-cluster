@@ -40,7 +40,7 @@ function enqueue(type, data) {
       while (service_status[service.name] != 0) await poll();
       worker.socket.emit("start", service.name, service.port);
       services_map[service.name] = worker.socket.id;
-      while (service_status[service.name] == 0) await poll();
+      while (![3,4].includes(service_status[service.name])) await poll();
     });
   } else if (type == "stop") {
     const { worker, service } = data;
