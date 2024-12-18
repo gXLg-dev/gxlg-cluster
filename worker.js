@@ -40,7 +40,6 @@ socket.on("identify", () => {
 socket.on("start", (service, port) => start(service, port));
 socket.on("stop", async service => {
   console.log("> stop", service);
-  socket.emit("status", service, 2);
   if (service in services) await stop(service);
   else socket.emit("status", service, 0);
   delete services[service];
@@ -106,6 +105,7 @@ async function start(service, port) {
 
 async function stop(service) {
   console.log("Stopping", service);
+  socket.emit("status", service, 2);
   const s = await services[service];
   const { config, proc, pid, open } = s;
   if (open) {
@@ -117,7 +117,7 @@ async function stop(service) {
     const kill = setTimeout(() => {
       console.log("Force killing", service);
       proc.kill("SIGKILL");
-    }, 10000);
+    }, 5000);
     await p;
     clearTimeout(kill);
     s.open = false;
