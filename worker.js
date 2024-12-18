@@ -116,7 +116,7 @@ async function stop(service) {
     spawnSync("sh", ["-c", stop]);
     const kill = setTimeout(() => {
       console.log("Force killing", service);
-      proc.kill("KILL");
+      proc.kill("SIGKILL");
     }, 10000);
     await p;
     clearTimeout(kill);
