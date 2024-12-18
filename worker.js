@@ -74,11 +74,11 @@ async function start(service, port) {
   console.log("Starting", service);
   const proc = spawn("sh", ["-c", start], { cwd });
   proc.on("exit", async code => {
-    if (code != 0 && code != null) {
-      socket.emit("status", service, 3);
-    }
     if (service in services) {
       const s = await services[service];
+      if (code != 0 && code != null && s.open) {
+        socket.emit("status", service, 3);
+      }
       s.open = false;
     }
   });

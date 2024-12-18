@@ -74,6 +74,11 @@ function enqueue(type, data) {
       console.log("switching");
       await switch_tunnels();
     });
+  } else if (type == "shutdown") {
+    const { worker } = data;
+    a.add(async () => {
+      worker.socket.emit("shutdown");
+    });
   }
 }
 
@@ -211,7 +216,11 @@ function identify_worker(id) {
 }
 
 async function shutdown_worker(id) {
-  workers[id].socket.emit("shutdown");
+  const worker = workers[id];
+  for (const service of worker.services) {
+    enqueue("stop", { service, worker });
+  }
+  enqueue("shutdown", { worker });
 }
 
 module.exports = {
