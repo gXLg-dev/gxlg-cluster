@@ -89,9 +89,8 @@ function setup_panel() {
 }
 
 async function kill_panel() {
-  const p = new Promise(r => panelt.once("exit", r));
   panelt.kill("SIGINT");
-  await p;
+  spawnSync("wait", [panelt.pid]);
 }
 
 
@@ -145,9 +144,8 @@ async function switch_tunnels() {
 
 async function kill() {
   if (running != null) {
-    const p = new Promise(r => running.once("exit", r));
     running.kill("SIGINT");
-    await p;
+    spawnSync("wait", [running.pid]);
     running = null;
   }
 }

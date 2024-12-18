@@ -2,6 +2,8 @@ const { main, worker } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
 const { switch_tunnels } = require("./tunnels.js");
 
+const EventEmitter = require("node:events");
+const Queue = require("promise-queue");
 const { Server } = require("socket.io");
 
 const server = new Server(main.port, {
@@ -21,34 +23,94 @@ for (const { name } of services) {
 // easier for tunnel updates
 const service_last_worker = {};
 
+// keep track of errors
+const errors = new Set();
+
+const statusEmitter = new EventEmitter();
+async function poll() {
+  await new Promise(r => statusEmitter.once("update", r));
+}
+
+const q = new Queue(1, Infinity);
+function enqueue(type, data) {
+  if (type == "start") {
+    const { worker, service } = data;
+    q.add(async () => {
+      console.log("starting", service.name);
+      while (service_status[service.name] != 0) await poll();
+      worker.socket.emit("start", service.name, service.port);
+      services_map[service.name] = worker.socket.id;
+      while (service_status[service.name] == 0) await poll();
+    });
+  } else if (type == "stop") {
+    const { worker, service } = data;
+    q.add(async () => {
+      console.log("stopping", service.name);
+      if (worker) {
+        if (worker.socket.connected) worker.socket.emit("stop", service.name);
+        while (![0, 3].includes(service_status[service.name])) await poll();
+      }
+      delete services_map[service.name];
+    });
+  } else if (type == "delete") {
+    const { id } = data;
+    q.add(() => {
+      console.log("deleting", id);
+      if (id in workers && workers[id].socket.connected) workers[id].socket.emit("shutdown");
+      delete workers[id];
+    });
+  } else if (type == "exit") {
+    const { res } = data;
+    q.add(() => {
+      console.log("exitting");
+      server.close();
+      res();
+    });
+  } else if (type == "relay") {
+    const { last } = data;
+    q.add(() => {
+      console.log("relaying");
+      if (last_relay == last) relay();
+    });
+  } else if (type == "switch") {
+    q.add(async () => {
+      console.log("switching");
+      await switch_tunnels();
+    });
+  }
+}
+
 server.on("connection", socket => {
   workers[socket.id] = {
-    socket,
-    "services": [],
-    "ip": socket.handshake.address
+    socket, "services": [], "ip": socket.handshake.address
   };
   schedule_relay();
 
   socket.on("disconnect", () => {
     for (const service of workers[socket.id].services) {
-      delete services_map[service.name];
-      if (service_status[service.name] != 3)
-        service_status[service.name] = 0;
+      enqueue("stop", { service });
     }
-    delete workers[socket.id];
+    enqueue("delete", { "id": socket.id });
     schedule_relay();
   });
 
-  // status handling
   socket.on("status", (service, status) => {
     service_status[service] = status;
+    console.log("status", service, status);
+    statusEmitter.emit("update");
+
+    if (status == 3) {
+      const sr = services.find(s => s.name == service);
+      enqueue("stop", { "service": sr });
+      schedule_relay();
+    }
   });
 });
 
-let current_timeout = null;
+let last_relay = null;
 function schedule_relay() {
-  clearTimeout(current_timeout);
-  current_timeout = setTimeout(relay, 5000);
+  last_relay = {};
+  setTimeout(() => enqueue("relay", { "last": last_relay }), 5000);
 }
 
 function ram_sum(services) {
@@ -93,12 +155,7 @@ async function relay() {
     const oldw = services_map[service.name];
     if (service.name in services_map) {
       if (oldw != best_worker && oldw in workers) {
-        const { socket } = workers[oldw];
-        if (socket.connected) {
-          socket.emit("stop", service.name);
-          await new Promise(r => socket.once("stopped-" + service.name, r));
-          service_status[service.name] = 0;
-        }
+        enqueue("stop", { "worker": workers[oldw], service });
       }
     }
 
@@ -106,48 +163,42 @@ async function relay() {
       new_workers[best_worker].services.push(service);
       // start service on new worker
       if (oldw != best_worker) {
-        workers[best_worker].socket.emit("start", service.name, service.port);
-        services_map[service.name] = best_worker;
+        console.log("enqueue(" + service.name + ")");
+        enqueue("start", { "worker": workers[best_worker], service });
+
         if (service.port && service_last_worker[service.name] != best_worker)
           need_change_tunnels = true;
         service_last_worker[service.name] = best_worker;
+
       }
-    } else {
-      delete services_map[service.name];
     }
   }
   for (const wid in workers) {
     workers[wid].services = new_workers[wid].services;
   }
-  if (need_change_tunnels) await switch_tunnels();
+  if (need_change_tunnels) enqueue("switch");
 }
 
 async function stop() {
   // TODO: point all records to a static website
 
   for (const service of services) {
-    const worker = services_map[service.name];
-    if (!worker) continue;
-    const { socket } = workers[worker];
-    socket.emit("stop", service.name);
-    await new Promise(r => socket.once("stopped-" + service.name, r));
-    delete services_map[service.name];
+    enqueue("stop", { service, "worker": workers[services_map[service.name]] });
   }
-  server.close();
+  await new Promise(res => enqueue("exit", { res }));
 }
 
 // API endpoints
 
 async function restart(name) {
-  const worker = services_map[name];
-  if (worker) {
-    const { socket } = workers[worker];
-    socket.emit("stop", name);
-    await new Promise(r => socket.once("stopped-" + name, r));
-    delete services_map[name];
-  }
   update_service(name);
-  service_status[name] = 0;
+  if (service_status[name] == 3) {
+    service_status[name] = 0;
+  } else {
+    const worker = workers[services_map[name]];
+    const service = services.find(s => s.name == name);
+    enqueue("stop", { worker, service });
+  }
   schedule_relay();
 }
 
@@ -159,17 +210,11 @@ function add_service(name) {
 }
 
 function identify_worker(id) {
-  workers[id].socket.emit("identify");
+  workers[id]?.socket.emit("identify");
 }
 
 async function shutdown_worker(id) {
-  const { socket, services } = workers[id];
-  for (const service of services) {
-    socket.emit("stop", service.name);
-    await new Promise(r => socket.once("stopped-" + service.name, r));
-    delete services_map[service.name];
-  }
-  socket.emit("shutdown");
+  workers[id].socket.emit("shutdown");
 }
 
 module.exports = {

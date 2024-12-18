@@ -8,6 +8,7 @@ const { main, worker } = require("./common-lib/config.js");
 const socket = io("ws://" + main.ip + ":" + main.port);
 
 const services = {};
+
 let blink = true;
 let identify = false;
 (async () => {
@@ -38,9 +39,11 @@ socket.on("identify", () => {
 
 socket.on("start", (service, port) => start(service, port));
 socket.on("stop", async service => {
+  console.log("> stop", service);
   socket.emit("status", service, 2);
   if (service in services) await stop(service);
-  socket.emit("stopped-" + service);
+  else socket.emit("status", service, 0);
+  delete services[service];
 });
 
 async function start(service, port) {
@@ -72,7 +75,9 @@ async function start(service, port) {
   console.log("Starting", service);
   const proc = spawn("sh", ["-c", start], { cwd });
   proc.on("exit", async code => {
-    if (code != 0 && code != null) socket.emit("status", service, 3);
+    if (code != 0 && code != null) {
+      socket.emit("status", service, 3);
+    }
     if (service in services) {
       const s = await services[service];
       s.open = false;
@@ -92,7 +97,7 @@ async function start(service, port) {
   services[service] = new Promise(res => {
     const spid = proc.pid;
     const sppd = spawnSync("ps", ["--ppid", spid, "-o", "pid:1="]);
-    const pid = sppd.stdout.toString().trim();
+    const pid = sppd.stdout.toString().trim() || proc.pid;
 
     res({ config, proc, pid, "open": true });
   });
@@ -104,17 +109,14 @@ async function stop(service) {
   const s = await services[service];
   const { config, proc, pid, open } = s;
   if (open) {
-    const p = new Promise(r => proc.once("exit", r));
-
     let stop = config.stop;
     if (!stop) stop = "kill -INT {pid}";
     stop = stop.replaceAll("{pid}", pid);
     spawnSync("sh", ["-c", stop]);
-
-    await p;
+    spawnSync("wait", [pid]);
     s.open = false;
   }
-  delete services[service];
+  socket.emit("status", service, 0);
 }
 
 async function stop_all() {
