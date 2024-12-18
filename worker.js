@@ -115,6 +115,7 @@ async function stop(service) {
     spawnSync("sh", ["-c", stop]);
     spawnSync("wait", [pid]);
     s.open = false;
+    console.log("Killed", service);
   }
   socket.emit("status", service, 0);
 }
