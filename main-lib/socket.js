@@ -1,6 +1,7 @@
 const { main, worker } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
 const { switch_tunnels } = require("./tunnels.js");
+const names = require("./names");
 
 const EventEmitter = require("node:events");
 const Queue = require("promise-queue");
@@ -36,7 +37,7 @@ function enqueue(type, data) {
       console.log("starting", service.name);
       while (service_status[service.name] != 0) await poll();
       worker.socket.emit("start", service.name, service.port);
-      services_map[service.name] = worker.socket.id;
+      services_map[service.name] = worker.id;
       while (![3,4].includes(service_status[service.name])) await poll();
     });
   } else if (type == "stop") {
@@ -83,16 +84,15 @@ function enqueue(type, data) {
 }
 
 server.on("connection", socket => {
-  workers[socket.id] = {
-    socket, "services": [], "ip": socket.handshake.address
-  };
+  const id = names();
+  workers[id] = { id, socket, "services": [], "ip": socket.handshake.address };
   schedule_relay();
 
   socket.on("disconnect", () => {
-    for (const service of workers[socket.id].services) {
+    for (const service of workers[id].services) {
       enqueue("stop", { service });
     }
-    enqueue("delete", { "id": socket.id });
+    enqueue("delete", { id });
     schedule_relay();
   });
 

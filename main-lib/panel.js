@@ -7,6 +7,7 @@ nulls({
   "uploads": false,
   "static": "main-lib/panel/static",
   "init": (_, s) => { server = s; },
+  "forceHttps": true,
   "hook": (req, res) => {
     const token = req.cookies.token;
     req.auth = check(token);
