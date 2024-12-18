@@ -23,9 +23,6 @@ for (const { name } of services) {
 // easier for tunnel updates
 const service_last_worker = {};
 
-// keep track of errors
-const errors = new Set();
-
 const statusEmitter = new EventEmitter();
 async function poll() {
   await new Promise(r => statusEmitter.once("update", r));
