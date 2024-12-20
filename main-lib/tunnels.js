@@ -3,7 +3,7 @@ const fs = require("fs");
 const axios = require("axios");
 const { spawnSync, spawn } = require("child_process");
 
-module.exports = { switch_tunnels, kill_all };
+module.exports = { restart_tunnel, kill };
 
 const { cloudflare, cloudflared, panel } = require("../common-lib/config.js");
 const cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
@@ -11,15 +11,15 @@ const cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : 
 if (!fs.existsSync(".tunnel")) {
   fs.mkdirSync(".tunnel");
 }
-if (!fs.existsSync(".tunnel/tunnel1.json")) {
-  const name = "gxlg-cluster-1-" + Date.now().toString(36);
+if (!fs.existsSync(".tunnel/tunnel.json")) {
+  const name = "gxlg-cluster-" + Date.now().toString(36);
   const out = spawnSync(
     cf,
-    ["tunnel", "create", "--cred-file=.tunnel/tunnel1.json", name]
+    ["tunnel", "create", "--cred-file=.tunnel/tunnel.json", name]
   );
   if (out.status != 0) {
     console.error(
-      "Could not create the first tunnel,",
+      "Could not create the tunnel,",
       "please check if you are logged in!"
     );
     console.error(out.stderr.toString());
@@ -28,85 +28,16 @@ if (!fs.existsSync(".tunnel/tunnel1.json")) {
     console.log(out.stdout.toString());
   }
 }
-const uuid1 = JSON.parse(fs.readFileSync(".tunnel/tunnel1.json")).TunnelID;
+const uuid = JSON.parse(fs.readFileSync(".tunnel/tunnel.json")).TunnelID;
 
-if (!fs.existsSync(".tunnel/tunnel2.json")) {
-  const name = "gxlg-cluster-2-" + Date.now().toString(36);
-  const out = spawnSync(
-    cf,
-    ["tunnel", "create", "--cred-file=.tunnel/tunnel2.json", name]
-  );
-  if (out.status != 0) {
-    console.error(
-      "Could not create the second tunnel,",
-      "please check if you are logged in!"
-    );
-    console.error(out.stderr.toString());
-    process.exit(1);
-  } else {
-    console.log(out.stdout.toString());
-  }
-}
-const uuid2 = JSON.parse(fs.readFileSync(".tunnel/tunnel2.json")).TunnelID;
-const tunnels = [uuid1, uuid2];
-
-if (!fs.existsSync(".tunnel/tunnelp.json")) {
-  const name = "gxlg-cluster-panel-" + Date.now().toString(36);
-  const out = spawnSync(
-    cf,
-    ["tunnel", "create", "--cred-file=.tunnel/tunnelp.json", name]
-  );
-  if (out.status != 0) {
-    console.error(
-      "Could not create the panel tunnel,",
-      "please check if you are logged in!"
-    );
-    console.error(out.stderr.toString());
-    process.exit(1);
-  } else {
-    console.log(out.stdout.toString());
-  }
-}
-const uuidp = JSON.parse(fs.readFileSync(".tunnel/tunnelp.json")).TunnelID;
-let panelt;
-function setup_panel() {
-  const ingress = [
-    "tunnel: " + uuidp,
-    "credentials-file: .tunnel/tunnelp.json",
-    "",
-    "ingress:",
-    "  - hostname: " + panel.record,
-    "    service: http://127.0.0.1:8080",
-    "  - service: http_status:404"
-  ];
-  fs.writeFileSync(".tunnel/ingressp.yml", ingress.join("\n"));
-  panelt = spawn(cf, [
-    "tunnel",
-    "--config", ".tunnel/ingressp.yml",
-    "run"
-  ]);
-  createRecord(uuidp, panel.record);
-}
-
-async function kill_panel() {
-  panelt.kill("SIGINT");
-  spawnSync("wait", [panelt.pid]);
-}
-
-
-let currently_active = -1;
 let running = null;
-
 const { services } = require("./services.js");
 const { workers, services_map } = require("./socket.js");
-async function switch_tunnels() {
-  currently_active = (currently_active + 1) % 2;
-  const current_uuid = tunnels[currently_active];
-
+async function restart_tunnel() {
   // generate new ingres
   const ingress = [
-    "tunnel: " + current_uuid,
-    "credentials-file: .tunnel/tunnel" + (currently_active + 1) + ".json",
+    "tunnel: " + uuid,
+    "credentials-file: .tunnel/tunnel.json",
     "",
     "ingress:"
   ];
@@ -122,7 +53,12 @@ async function switch_tunnels() {
     );
     records.push(record);
   }
-  ingress.push("  - service: http_status:404");
+  ingress.push(
+    "  - hostname: " + panel.record,
+    "    service: http://127.0.0.1:8080",
+    "  - service: http_status:404"
+  );
+  records.push(panel.record);
   fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
   // start the second tunnel
@@ -134,7 +70,7 @@ async function switch_tunnels() {
 
   // update dns rules
   for (const record of records) {
-    await createRecord(current_uuid, record);
+    await createRecord(uuid, record);
   }
 
   // stop last tunnel and switch
@@ -198,10 +134,3 @@ async function createRecord(uuid, record) {
     );
   }
 }
-
-async function kill_all() {
-  await kill();
-  await kill_panel();
-}
-
-setup_panel();

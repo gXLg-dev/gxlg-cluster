@@ -1,6 +1,6 @@
 const { main, worker } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
-const { switch_tunnels } = require("./tunnels.js");
+const { restart_tunnel } = require("./tunnels.js");
 const names = require("./names");
 
 const EventEmitter = require("node:events");
@@ -68,12 +68,15 @@ function enqueue(type, data) {
     const { last } = data;
     q.add(() => {
       console.log("relaying");
-      if (last_relay == last) relay();
+      if (last_relay == last) await relay();
+      else console.log("dequeue rel");
     });
-  } else if (type == "switch") {
+  } else if (type == "restart") {
+    const { last } = data;
     q.add(async () => {
-      console.log("switching");
-      await switch_tunnels();
+      console.log("restarting tunnel");
+      if (last_restart == last) await restart_tunnel();
+      else console.log("dequeue res");
     });
   } else if (type == "shutdown") {
     const { worker } = data;
@@ -114,6 +117,11 @@ function schedule_relay() {
   last_relay = {};
   setTimeout(() => enqueue("relay", { "last": last_relay }), 5000);
 }
+let last_restart = null;
+function schedule_restart() {
+  last_restart = {};
+  enqueue("restart", { "last": last_restart });
+}
 
 function ram_sum(services) {
   return services.reduce((acc, b) => (acc + b.ram), 0);
@@ -126,7 +134,7 @@ async function relay() {
   for (const wid in workers) {
     new_workers[wid] = { "services": [] };
   }
-  let need_change_tunnels = false;
+  let need_restart_tunnel = false;
   for (const service of services) {
     // if error: skip this service, assume it's stopped
     if (service_status[service.name] == 3) continue;
@@ -169,7 +177,7 @@ async function relay() {
         enqueue("start", { "worker": workers[best_worker], service });
 
         if (service.port && service_last_worker[service.name] != best_worker)
-          need_change_tunnels = true;
+          need_restart_tunnel = true;
         service_last_worker[service.name] = best_worker;
 
       }
@@ -178,7 +186,7 @@ async function relay() {
   for (const wid in workers) {
     workers[wid].services = new_workers[wid].services;
   }
-  if (need_change_tunnels) enqueue("switch");
+  if (need_restart_tunnel) schedule_restart();
 }
 
 async function stop() {
@@ -222,6 +230,8 @@ async function shutdown_worker(id) {
   }
   enqueue("shutdown", { worker });
 }
+
+schedule_restart();
 
 module.exports = {
   workers, services_map, service_status,

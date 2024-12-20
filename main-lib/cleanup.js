@@ -1,12 +1,12 @@
-const { kill_all } = require("./tunnels.js");
+const { kill } = require("./tunnels.js");
 const { stop } = require("./socket.js");
 const { close } = require("./panel.js");
 
 async function cleanup() {
   await stop();
   console.log("stopped socket server");
-  await kill_all();
-  console.log("killed all tunnels");
+  await kill();
+  console.log("killed the tunnel");
   close();
   console.log("closed the panel");
 }
