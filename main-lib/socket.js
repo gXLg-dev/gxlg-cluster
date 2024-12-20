@@ -233,10 +233,8 @@ async function shutdown_worker(id) {
 
 module.exports = {
   workers, services_map, service_status,
+  schedule_restart,
   stop,
   add_service, restart,
   identify_worker, shutdown_worker
 };
-
-schedule_restart();
-

@@ -32,7 +32,7 @@ const uuid = JSON.parse(fs.readFileSync(".tunnel/tunnel.json")).TunnelID;
 
 let running = null;
 const { services } = require("./services.js");
-const { workers, services_map } = require("./socket.js");
+const { workers, services_map, schedule_restart } = require("./socket.js");
 async function restart_tunnel() {
   // generate new ingres
   const ingress = [
@@ -134,3 +134,5 @@ async function createRecord(uuid, record) {
     );
   }
 }
+
+schedule_restart();
