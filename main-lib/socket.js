@@ -66,7 +66,7 @@ function enqueue(type, data) {
     });
   } else if (type == "relay") {
     const { last } = data;
-    q.add(() => {
+    q.add(async () => {
       console.log("relaying");
       if (last_relay == last) await relay();
       else console.log("dequeue rel");
