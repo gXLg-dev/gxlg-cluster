@@ -231,11 +231,12 @@ async function shutdown_worker(id) {
   enqueue("shutdown", { worker });
 }
 
-schedule_restart();
-
 module.exports = {
   workers, services_map, service_status,
   stop,
   add_service, restart,
   identify_worker, shutdown_worker
 };
+
+schedule_restart();
+
