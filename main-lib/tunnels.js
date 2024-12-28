@@ -2,6 +2,7 @@ const os = require("os");
 const fs = require("fs");
 const axios = require("axios");
 const { spawnSync, spawn } = require("child_process");
+const raspi = require("../common-lib/raspi.js");
 
 module.exports = { restart_tunnel, kill };
 
@@ -65,6 +66,7 @@ async function restart_tunnel() {
   const other = spawn(cf, [
     "tunnel",
     "--config", ".tunnel/ingress.yml",
+    ...(raspi ? [] : ["--protocol", "http2"]),
     "run"
   ]);
 

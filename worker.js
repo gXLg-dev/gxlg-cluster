@@ -1,9 +1,12 @@
 const { io } = require("socket.io-client");
 const fs = require("fs");
 const { spawn, spawnSync } = require("child_process");
-const rpio = require("rpio");
+
+const raspi = require("./common-lib/raspi.js");
+const rpio = raspi ? require("rpio") : null;
 
 const { main, worker } = require("./common-lib/config.js");
+const name = require("./worker-lib/name");
 
 const socket = io("ws://" + main.ip + ":" + main.port);
 
@@ -11,27 +14,33 @@ const services = {};
 
 let blink = true;
 let identify = false;
-(async () => {
-  rpio.open(37, rpio.OUTPUT, rpio.LOW);
-  while (blink) {
-    let ram = 0;
-    for (const service in services) {
-      const { open, config } = await services[service];
-      if (open) ram += config.ram;
+if (raspi) {
+  (async () => {
+    rpio.open(37, rpio.OUTPUT, rpio.LOW);
+    while (blink) {
+      let ram = 0;
+      for (const service in services) {
+        const { open, config } = await services[service];
+        if (open) ram += config.ram;
+      }
+      const sleep = 1000 * (1 - ram / worker.ram);
+      await new Promise(r => setTimeout(r, sleep))
+      rpio.write(37, rpio.HIGH);
+      if (identify) {
+        await new Promise(r => setTimeout(r, 4000))
+        identify = false;
+      } else {
+        await new Promise(r => setTimeout(r, 100))
+      }
+      rpio.write(37, rpio.LOW);
     }
-    const sleep = 1000 * (1 - ram / worker.ram);
-    await new Promise(r => setTimeout(r, sleep))
-    rpio.write(37, rpio.HIGH);
-    if (identify) {
-      await new Promise(r => setTimeout(r, 4000))
-      identify = false;
-    } else {
-      await new Promise(r => setTimeout(r, 100))
-    }
-    rpio.write(37, rpio.LOW);
-  }
-  console.log("end");
-})();
+    console.log("end");
+  })();
+}
+
+socket.on("whoareyou", () => {
+  socket.emit("iam", name);
+});
 
 socket.on("identify", () => {
   identify = true;
@@ -136,8 +145,10 @@ async function exit() {
   await stop_all();
   socket.close();
   blink = false;
-  rpio.write(37, rpio.LOW);
-  rpio.close(37);
+  if (raspi) {
+    rpio.write(37, rpio.LOW);
+    rpio.close(37);
+  }
 }
 
 socket.on("disconnect", async () => {

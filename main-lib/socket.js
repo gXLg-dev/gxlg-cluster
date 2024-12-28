@@ -1,7 +1,6 @@
 const { main, worker } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
 const { restart_tunnel } = require("./tunnels.js");
-const names = require("./names");
 
 const EventEmitter = require("node:events");
 const Queue = require("promise-queue");
@@ -86,9 +85,15 @@ function enqueue(type, data) {
   }
 }
 
-server.on("connection", socket => {
-  const id = names();
-  workers[id] = { id, socket, "services": [], "ip": socket.handshake.address };
+server.on("connection", async socket => {
+  const id = await new Promise(r => {
+    socket.emit("whoareyou");
+    socket.once("iam" name => r(name));
+  });
+
+  if (!(id in workers)) {
+    workers[id] = { id, socket, "services": [], "ip": socket.handshake.address };
+  }
   schedule_relay();
 
   socket.on("disconnect", () => {
