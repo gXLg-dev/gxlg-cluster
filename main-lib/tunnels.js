@@ -4,9 +4,9 @@ const axios = require("axios");
 const { spawnSync, spawn } = require("child_process");
 const raspi = require("../common-lib/raspi.js");
 
-module.exports = { restart_tunnel, kill, create_record };
+module.exports = { restart_tunnel, kill };
 
-const { cloudflare, cloudflared, panel, down } = require("../common-lib/config.js");
+const { cloudflare, cloudflared, panel } = require("../common-lib/config.js");
 const cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
 
 if (!fs.existsSync(".tunnel")) {
@@ -96,9 +96,6 @@ const headers = {
 };
 
 async function create_record(uuid, record) {
-  const endpoint = uuid ? uuid + ".cfargotunnel.com" : down;
-  if (!endpoint) return;
-
   const domain = record.split(".").slice(-2).join(".");
   const zones = {};
   const rz = await axios.get(base + "zones", { headers });
@@ -121,7 +118,7 @@ async function create_record(uuid, record) {
   const settings = {
     "type": "CNAME",
     "name": record,
-    "content": endpoint,
+    "content": uuid + ".cfargotunnel.com",
     "proxied": true,
     "comment": "Created for gXLg Cluster"
   };

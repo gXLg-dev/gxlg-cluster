@@ -1,6 +1,6 @@
-const { main, worker, panel } = require("../common-lib/config.js");
+const { main, worker } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
-const { restart_tunnel, create_record } = require("./tunnels.js");
+const { restart_tunnel } = require("./tunnels.js");
 
 const EventEmitter = require("node:events");
 const Queue = require("promise-queue");
@@ -202,10 +202,8 @@ async function relay() {
 
 async function stop() {
   for (const service of services) {
-    if (service.record) await create_record(null, service.record);
     enqueue("stop", { service, "worker": workers[services_map[service.name]] });
   }
-  await create_record(null, panel.record);
   await new Promise(res => enqueue("exit", { res }));
 }
 
