@@ -1,6 +1,6 @@
-const { main, worker } = require("../common-lib/config.js");
+const { main, worker, panel } = require("../common-lib/config.js");
 const { setup_service, services, update_service } = require("./services.js");
-const { restart_tunnel } = require("./tunnels.js");
+const { restart_tunnel, create_record } = require("./tunnels.js");
 
 const EventEmitter = require("node:events");
 const Queue = require("promise-queue");
@@ -35,9 +35,11 @@ function enqueue(type, data) {
     q.add(async () => {
       console.log("starting", service.name);
       while (service_status[service.name] != 0) await poll();
-      worker.socket.emit("start", service.name, service.port);
-      services_map[service.name] = worker.id;
-      while (![3,4].includes(service_status[service.name])) await poll();
+      if (worker.socket.connected) {
+        worker.socket.emit("start", service.name, service.port);
+        services_map[service.name] = worker.id;
+        while (![3,4].includes(service_status[service.name])) await poll();
+      }
     });
   } else if (type == "stop") {
     const { worker, service } = data;
@@ -46,6 +48,8 @@ function enqueue(type, data) {
       if (worker) {
         if (worker.socket.connected) worker.socket.emit("stop", service.name);
         while (![0, 3].includes(service_status[service.name])) await poll();
+      } else {
+        service_status[service.name] = 0;
       }
       delete services_map[service.name];
     });
@@ -90,6 +94,7 @@ server.on("connection", async socket => {
     socket.emit("whoareyou");
     socket.once("iam", name => r(name));
   });
+  console.log("connected:", id);
 
   if (!(id in workers)) {
     workers[id] = { id, socket, "services": [], "ip": socket.handshake.address };
@@ -97,6 +102,7 @@ server.on("connection", async socket => {
   schedule_relay();
 
   socket.on("disconnect", () => {
+    console.log("disconnected:", id);
     for (const service of workers[id].services) {
       enqueue("stop", { service });
     }
@@ -195,11 +201,11 @@ async function relay() {
 }
 
 async function stop() {
-  // TODO: point all records to a static website
-
   for (const service of services) {
+    if (service.record) await create_record(null, service.record);
     enqueue("stop", { service, "worker": workers[services_map[service.name]] });
   }
+  await create_record(null, panel.record);
   await new Promise(res => enqueue("exit", { res }));
 }
 
