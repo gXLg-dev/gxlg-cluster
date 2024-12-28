@@ -88,7 +88,7 @@ function enqueue(type, data) {
 server.on("connection", async socket => {
   const id = await new Promise(r => {
     socket.emit("whoareyou");
-    socket.once("iam" name => r(name));
+    socket.once("iam", name => r(name));
   });
 
   if (!(id in workers)) {
