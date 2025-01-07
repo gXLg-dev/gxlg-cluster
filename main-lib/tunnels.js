@@ -4,7 +4,7 @@ const axios = require("axios");
 const { spawnSync, spawn } = require("child_process");
 const raspi = require("../common-lib/raspi.js");
 
-module.exports = { restart_tunnel, kill_clean };
+module.exports = { restart_tunnel, kill };
 
 const { cloudflare, cloudflared, panel } = require("../common-lib/config.js");
 const cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
