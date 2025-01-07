@@ -4,7 +4,7 @@ const axios = require("axios");
 const { spawnSync, spawn } = require("child_process");
 const raspi = require("../common-lib/raspi.js");
 
-module.exports = { restart_tunnel, kill };
+module.exports = { restart_tunnel, kill_clean };
 
 const { cloudflare, cloudflared, panel } = require("../common-lib/config.js");
 const cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
@@ -43,14 +43,15 @@ async function restart_tunnel() {
     "ingress:"
   ];
   const records = [];
-  for (const { name, record, port } of services) {
+  for (const { name, record, port, protocol } of services) {
     if (!record) continue;
     const worker = services_map[name];
     if (!worker) continue;
     const { ip } = workers[worker];
+    const prot = protocol ?? "http";
     ingress.push(
       "  - hostname: " + record,
-      "    service: http://" + ip + ":" + port
+      "    service: " + prot + "://" + ip + ":" + port
     );
     records.push(record);
   }
@@ -62,13 +63,20 @@ async function restart_tunnel() {
   records.push(panel.record);
   fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
-  // start the second tunnel
-  const other = spawn(cf, [
+  // start the tunnel
+  const tunnel = spawn(cf, [
     "tunnel",
     "--config", ".tunnel/ingress.yml",
     ...(raspi ? [] : ["--protocol", "http2"]),
     "run"
   ]);
+  tunnel.should_run = true;
+  tunnel.once("exit", () => {
+    if (tunnel.should_run) {
+      console.log("tunned died unexpectedly");
+      schedule_restart();
+    }
+  });
 
   // update dns rules
   for (const record of records) {
@@ -77,11 +85,12 @@ async function restart_tunnel() {
 
   // stop last tunnel and switch
   await kill();
-  running = other;
+  running = tunnel;
 }
 
 async function kill() {
   if (running != null) {
+    running.should_run = false;
     running.kill("SIGINT");
     spawnSync("wait", [running.pid]);
     running = null;
