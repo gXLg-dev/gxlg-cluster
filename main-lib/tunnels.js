@@ -64,12 +64,14 @@ async function restart_tunnel() {
   fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
   // start the tunnel
-  const tunnel = spawn(cf, [
-    "tunnel",
-    "--config", ".tunnel/ingress.yml",
-    ...(raspi ? [] : ["--protocol", "http2"]),
-    "run"
-  ]);
+  const tunnel = spawn(
+    cf,
+    [
+      "tunnel", "--config", ".tunnel/ingress.yml",
+      ...(raspi ? [] : ["--protocol", "http2"]), "run"
+    ],
+    { "detached": true }
+  );
   tunnel.should_run = true;
   tunnel.once("exit", () => {
     if (tunnel.should_run) {
