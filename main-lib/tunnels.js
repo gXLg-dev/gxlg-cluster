@@ -73,7 +73,8 @@ async function restart_tunnel() {
   tunnel.should_run = true;
   tunnel.once("exit", () => {
     if (tunnel.should_run) {
-      console.log("tunned died unexpectedly");
+      running = null;
+      console.log("tunnel died unexpectedly");
       schedule_restart();
     }
   });
