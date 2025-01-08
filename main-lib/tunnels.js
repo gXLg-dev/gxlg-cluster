@@ -94,8 +94,9 @@ async function restart_tunnel() {
 async function kill() {
   if (running != null) {
     running.should_run = false;
+    const p = new Promise(r => running.once("exit", r));
     running.kill("SIGINT");
-    spawnSync("wait", [running.pid]);
+    await p;
     running = null;
   }
 }
