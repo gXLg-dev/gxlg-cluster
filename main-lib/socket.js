@@ -72,14 +72,14 @@ function enqueue(type, data) {
     q.add(async () => {
       console.log("relaying");
       if (last_relay == last) await relay();
-      else console.log("dequeue rel");
+      else console.log("dequeue relay");
     });
   } else if (type == "restart") {
     const { last } = data;
     q.add(async () => {
       console.log("restarting tunnel");
       if (last_restart == last) await restart_tunnel();
-      else console.log("dequeue res");
+      else console.log("dequeue restart");
     });
   } else if (type == "shutdown") {
     const { worker } = data;
