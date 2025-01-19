@@ -53,6 +53,12 @@ function enqueue(type, data) {
       }
       delete services_map[service.name];
     });
+  } else if (type == "error") {
+    const { service } = data;
+    q.add(async () => {
+      console.log("error on", service.name);
+      delete services_map[service.name];
+    });
   } else if (type == "remove") {
     const { worker, service } = data;
     q.add(async () => {
@@ -130,7 +136,7 @@ server.on("connection", async socket => {
 
     if (status == 3) {
       const sr = services.find(s => s.name == service);
-      enqueue("stop", { "service": sr, "worker": workers[id] });
+      enqueue("error", { "service": sr });
       schedule_relay();
     }
   });
