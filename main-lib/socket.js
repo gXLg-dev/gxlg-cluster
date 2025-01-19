@@ -130,7 +130,7 @@ server.on("connection", async socket => {
 
     if (status == 3) {
       const sr = services.find(s => s.name == service);
-      enqueue("stop", { "service": sr });
+      enqueue("stop", { "service": sr, "worker": workers[id] });
       schedule_relay();
     }
   });
