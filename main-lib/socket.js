@@ -1,5 +1,5 @@
 const { main, worker } = require("../common-lib/config.js");
-const { setup_service, services, update_service } = require("./services.js");
+const { setup_service, services, update_service, remove_service } = require("./services.js");
 const { restart_tunnel } = require("./tunnels.js");
 
 const EventEmitter = require("node:events");
@@ -52,6 +52,19 @@ function enqueue(type, data) {
         service_status[service.name] = 0;
       }
       delete services_map[service.name];
+    });
+  } else if (type == "remove") {
+    const { worker, service } = data;
+    q.add(async () => {
+      console.log("removing", service.name);
+      if (worker) {
+        if (worker.socket.connected) worker.socket.emit("stop", service.name);
+        while (![0, 3].includes(service_status[service.name])) await poll();
+      } else {
+        service_status[service.name] = 0;
+      }
+      delete services_map[service.name];
+      remove_service(service.name);
     });
   } else if (type == "delete") {
     const { id } = data;
@@ -228,6 +241,17 @@ function add_service(name) {
   schedule_relay();
 }
 
+function disable_service(name) {
+  if (service_status[name] == 3) {
+    service_status[name] = 0;
+  } else {
+    const worker = workers[services_map[name]];
+    const service = services.find(s => s.name == name);
+    enqueue("remove", { worker, service });
+  }
+  schedule_relay();
+}
+
 function identify_worker(id) {
   workers[id]?.socket.emit("identify");
 }
@@ -244,6 +268,6 @@ module.exports = {
   workers, services_map, service_status,
   schedule_restart,
   stop,
-  add_service, restart,
+  add_service, restart, disable_service,
   identify_worker, shutdown_worker
 };

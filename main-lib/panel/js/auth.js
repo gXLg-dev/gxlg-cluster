@@ -15,7 +15,7 @@ function set_cookie(res, password) {
     "secure": true,
     "maxAge": LOGIN_DURATION
   };
-  res.cookie("token", token, options);
+  res.cookie("token.cluster", token, options);
 }
 
 function check(token) {

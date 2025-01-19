@@ -9,7 +9,7 @@ nulls({
   "init": (_, s) => { server = s; },
   "forceHttps": true,
   "hook": (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies["token.cluster"];
     req.auth = check(token);
   }
 });

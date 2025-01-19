@@ -1,4 +1,4 @@
-<form class="item" null-api="$main-lib/panel/js/add.js" method="POST" action="/api/add_service">
+<form class="item" null-api="$main-lib/panel/js/add.js" action="/api/add_service">
   <div>
     <img src="/static/service.png"> Add a service
   </div>
@@ -9,7 +9,19 @@
   <input type="submit" value="Add">
 </form>
 
-<form class="item" null-api="$main-lib/panel/js/execute.js" method="POST" action="/api/execute">
+<form class="item" null-api="$main-lib/panel/js/remove.js" action="/api/disable_service">
+  <div>
+    <img src="/static/service.png"> Remove a service
+  </div>
+  <label>
+    Name:
+    <input type="text" name="name">
+  </label>
+  <input type="submit" value="Remove">
+</form>
+
+
+<form class="item" null-api="$main-lib/panel/js/execute.js" action="/api/execute">
   <div>
     <img src="/static/terminal.png"> Execute a command
   </div>
