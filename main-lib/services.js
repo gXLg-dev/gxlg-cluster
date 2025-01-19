@@ -39,7 +39,7 @@ function remove_service(dir) {
   const old = services.findIndex(s => s.name == dir);
   services.splice(old, 1);
   const path = "./services/" + dir + "/gxlg-cluster.json";
-  fs.rename(path, path + ".disabled");
+  fs.renameSync(path, path + ".disabled");
 }
 
 module.exports = { setup_service, services, update_service, remove_service };
