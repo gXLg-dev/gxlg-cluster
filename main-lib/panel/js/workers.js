@@ -1,7 +1,7 @@
 const { workers } = require("../../socket.js");
 
 module.exports = async (req, res) => {
-  const w = [];
+  const wk = [];
   for (const w in workers) {
     const services = workers[w].services.map(s => s.name).join(", ");
     const ram = workers[w].services.reduce((acc, s) => acc + s.ram, 0);
@@ -12,8 +12,8 @@ module.exports = async (req, res) => {
     s.emit("temp");
     const temp = await p;
 
-    w.push({ services, ram, ip, temp, "id": w });
+    wk.push({ services, ram, ip, temp, "id": w });
   }
-  return w;
+  return wk;
 };
 
