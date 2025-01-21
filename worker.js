@@ -42,6 +42,12 @@ socket.on("whoareyou", () => {
   socket.emit("iam", name);
 });
 
+socket.on("temp", () => {
+  socket.emit("temp", raspi ? (
+    spawnSync("vcgencmd", ["measure_temp"]).stdout.toString().split("=")[1].trim()
+  ) : "N/A");
+});
+
 socket.on("identify", () => {
   identify = true;
 });

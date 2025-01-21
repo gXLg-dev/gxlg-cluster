@@ -1,6 +1,6 @@
 <div>
   <div class="item">
-    <b><span null-data="(q,r,w)=>w.id"></span></b>
+    <b><span null-data="(q,r,w)=>w.id"></span></b> (<span null-data="(q,r,w)=>w.temp"></span>)
     <br>
     <span><img src="/static/port.png"> <span null-data="(q,r,w)=>w.ip"></span></span>
     <br>
@@ -8,11 +8,11 @@
     <br>
     <span><img src="/static/service.png"> <span null-data="(q,r,w)=>w.services"></span></span>
     <br><br>
-    <form class="button" method="POST" action="/api/identify_worker" null-api="$main-lib/panel/js/identify.js">
+    <form class="button" action="/api/identify_worker" null-api="$main-lib/panel/js/identify.js">
       <input type="hidden" name="id" null-tag="(q,r,w)=>['value',w.id]">
       <button type="submit"><img src="/static/led.png"> LED</button>
     </form>
-    <form class="button" method="POST" action="/api/shutdown_worker" null-api="$main-lib/panel/js/shutdown.js">
+    <form class="button" action="/api/shutdown_worker" null-api="$main-lib/panel/js/shutdown.js">
       <input type="hidden" name="id" null-tag="(q,r,w)=>['value',w.id]">
       <button type="submit"><img src="/static/shutdown.png"> Shut down</button>
     </form>
