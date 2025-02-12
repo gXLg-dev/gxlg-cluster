@@ -98,7 +98,10 @@ async function restart_tunnel() {
         await axios.get("https://" + panel.record);
       } catch (e) {
         // if "frozen" aka Cloudflare can't reach the tunnel
-        if (e.status == 530) schedule_restart();
+        if (e.status == 530) {
+          console.log("tunnel is frozen");
+          schedule_restart();
+        }
       }
     }, 60000);
   }, 10000);
