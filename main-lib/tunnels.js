@@ -34,6 +34,7 @@ const uuid = JSON.parse(fs.readFileSync(".tunnel/tunnel.json")).TunnelID;
 let running = null;
 const { services } = require("./services.js");
 const { workers, services_map, schedule_restart } = require("./socket.js");
+let polling = null;
 async function restart_tunnel() {
   // generate new ingres
   const ingress = [
@@ -89,9 +90,22 @@ async function restart_tunnel() {
   // stop last tunnel and switch
   await kill();
   running = tunnel;
+
+  // stop polling and restart again later
+  setTimeout(() => {
+    polling = setInterval(async () => {
+      try {
+        await axios.get("https://" + panel.record);
+      } catch (e) {
+        // if "frozen" aka Cloudflare can't reach the tunnel
+        if (e.status == 530) schedule_restart();
+      }
+    }, 60000);
+  }, 10000);
 }
 
 async function kill() {
+  clearInterval(polling);
   if (running != null) {
     running.should_run = false;
     const p = new Promise(r => running.once("exit", r));
