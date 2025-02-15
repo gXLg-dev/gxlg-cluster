@@ -21,7 +21,7 @@
     "bcryptjs": "^2.4.3",
     "bufferutil": "^4.0.8",
     "jsonwebtoken": "^9.0.2",
-    "nulls": "^2.4.0",
+    "nulls": "^2.5.4",
     "promise-queue": "^2.2.5",
     "rpio": "^2.4.2",
     "socket.io": "^4.8.1",
