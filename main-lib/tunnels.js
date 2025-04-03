@@ -165,6 +165,14 @@ async function create_record(uuid, record) {
       { headers }
     );
   }
+
+  // purge cache
+  await axios.post(
+    base + "zones/" + zone + "/purge_cache",
+    { "hosts": [record] },
+    { headers }
+  );
+
 }
 
 schedule_restart();

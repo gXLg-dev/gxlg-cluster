@@ -1,5 +1,6 @@
 const { nulls } = require("nulls");
 const { check } = require("./panel/js/auth.js");
+const { panel } = require("../common-lib/config.js");
 
 let server;
 (async () => {
@@ -11,7 +12,8 @@ let server;
     "hook": (req, res) => {
       const token = req.cookies["token.cluster"];
       req.auth = check(token);
-    }
+    },
+    "domain": panel.record
   });
 })();
 

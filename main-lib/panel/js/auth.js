@@ -5,8 +5,7 @@ const { panel } = require("../../../common-lib/config.js");
 const LOGIN_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function set_cookie(res, password) {
-  const hash = bcrypt.hashSync(password);
-  const token = jwt.sign({ hash }, panel.secret, {
+  const token = jwt.sign({ password }, panel.secret, {
     "expiresIn": LOGIN_DURATION.toString()
   });
   const options = {
@@ -22,7 +21,7 @@ function check(token) {
   if (token == null) return false;
   try {
     const d = jwt.verify(token, panel.secret);
-    return bcrypt.compareSync(panel.password, d.hash);
+    return bcrypt.compareSync(d.password, panel.password);
   } catch {
     return false;
   }
