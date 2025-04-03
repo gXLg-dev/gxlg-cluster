@@ -87,7 +87,10 @@ async function start(service, port) {
   let start = config.start;
   if (port) start = start.replaceAll("{port}", port);
   console.log("Starting", service);
+  const pipe = fs.createWriteStream("./worker-logs/" + service + ".txt");
+
   const proc = spawn("sh", ["-c", start], { cwd });
+  proc.on("close", () => pipe.end());
   proc.on("exit", async code => {
     if (service in services) {
       const s = await services[service];
@@ -101,12 +104,8 @@ async function start(service, port) {
     console.error("Error from", service, e);
     socket.emit("status", service, 3);
   });
-  proc.stdout.on("data", d => {
-    process.stdout.write(service + " |v| " + d.toString());
-  });
-  proc.stderr.on("data", d => {
-    process.stdout.write(service + " |x| " + d.toString());
-  });
+  proc.stdout.on("data", d => pipe.write("Log: " + d));
+  proc.stderr.on("data", d => pipe.write("Err: " + d));
 
   services[service] = new Promise(res => {
     const spid = proc.pid;
