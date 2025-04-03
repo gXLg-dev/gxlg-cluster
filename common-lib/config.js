@@ -17,7 +17,10 @@ try {
 
     "panel.record",
     "panel.password",
-    "panel.secret"
+    "panel.secret",
+
+    "turnstile.site",
+    "turnstile.secret",
   ];
 
   for (const name of required) {

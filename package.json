@@ -22,6 +22,7 @@
     "bufferutil": "^4.0.9",
     "jsonwebtoken": "^9.0.2",
     "nulls": "^2.9.0",
+    "nulls-turnstile": "^1.0.4",
     "promise-queue": "^2.2.5",
     "rpio": "^2.4.2",
     "socket.io": "^4.8.1",
