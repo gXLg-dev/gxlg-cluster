@@ -65,6 +65,7 @@ async function restart_tunnel() {
   fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
   // start the tunnel
+  console.log("> run tunnel");
   const tunnel = spawn(
     cf,
     [
@@ -88,10 +89,12 @@ async function restart_tunnel() {
   }
 
   // stop last tunnel and switch
+  console.log("> kill old");
   await kill();
   running = tunnel;
 
   // stop polling and restart again later
+  console.log("> setup polling");
   setTimeout(() => {
     polling = setInterval(async () => {
       try {
@@ -99,7 +102,7 @@ async function restart_tunnel() {
       } catch (e) {
         // if "frozen" aka Cloudflare can't reach the tunnel
         if (e.status == 530) {
-          console.log("tunnel is frozen");
+          console.log("! tunnel is frozen");
           schedule_restart();
         }
       }
