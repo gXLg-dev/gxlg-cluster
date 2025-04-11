@@ -114,7 +114,7 @@ async function kill() {
     const p = new Promise(r => running.once("exit", r));
     running.kill("SIGINT");
     const force = setTimeout(() => {
-      console.log("Force killing", service);
+      console.log("Force killing tunnel");
       running.kill("SIGKILL");
     }, 5000);
     await p;
