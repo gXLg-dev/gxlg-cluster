@@ -4,7 +4,7 @@
     <br>
     <span><img src="/static/port.png"> <span null-data="(q,r,s)=>s.port?':'+s.port:'none'"></span></span>
     <br>
-    <span><img src="/static/website.png"> <span><a null-attr="(q,r,s)=>({'href':s.record})" null-data="(q,r,s)=>s.record??'none'"></a></span></span>
+    <span><img src="/static/website.png"> <span><a null-attr="(q,r,s)=>({'href':(s.record?'https://'+s.record:null)})" null-data="(q,r,s)=>s.record??'none'"></a></span></span>
     <br>
     <span><img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker"></span></span>
     <br>
