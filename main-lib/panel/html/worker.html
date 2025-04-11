@@ -9,11 +9,11 @@
     <span><img src="/static/service.png"> <span null-data="(q,r,w)=>w.services"></span></span>
     <br><br>
     <form class="button" action="/api/identify_worker" null-api="$main-lib/panel/js/identify.js">
-      <input type="hidden" name="id" null-tag="(q,r,w)=>['value',w.id]">
+      <input type="hidden" name="id" null-attr="(q,r,w)=>({'value':w.id})">
       <button type="submit"><img src="/static/led.png"> LED</button>
     </form>
     <form class="button" action="/api/shutdown_worker" null-api="$main-lib/panel/js/shutdown.js">
-      <input type="hidden" name="id" null-tag="(q,r,w)=>['value',w.id]">
+      <input type="hidden" name="id" null-attr="(q,r,w)=>({'value':w.id})">
       <button type="submit"><img src="/static/shutdown.png"> Shut down</button>
     </form>
   </div>
