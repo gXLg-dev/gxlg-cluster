@@ -121,7 +121,7 @@ async function kill() {
       running.kill("SIGKILL");
     }, 5000);
     await p;
-    clearTimeout(kill);
+    clearTimeout(force);
     running = null;
   }
 }
