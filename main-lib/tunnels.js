@@ -113,7 +113,12 @@ async function kill() {
     running.should_run = false;
     const p = new Promise(r => running.once("exit", r));
     running.kill("SIGINT");
+    const force = setTimeout(() => {
+      console.log("Force killing", service);
+      running.kill("SIGKILL");
+    }, 5000);
     await p;
+    clearTimeout(kill);
     running = null;
   }
 }
