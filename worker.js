@@ -41,10 +41,13 @@ if (raspi) {
         await new Promise(r => setTimeout(r, 4000))
         rpio.write(37, rpio.LOW);
       } else {
+        const st = Date.now();
         for (let i = 0; i < tacts; i++) {
+          const d = Date.now();
           rpio.write(37, rpio.HIGH);
-          await new Promise(r => setTimeout(r, 250));
+          await new Promise(r => setTimeout(r, st + i * 250 - d + 100));
           rpio.write(37, rpio.LOW);
+          await new Promise(r => setTimeout(r, st + i * 250 - d + 150));
         }
       }
     }
