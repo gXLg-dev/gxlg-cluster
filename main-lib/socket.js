@@ -28,6 +28,15 @@ async function poll() {
   await new Promise(r => statusEmitter.once("update", r));
 }
 
+const sync = setInterval(() => {
+  for (const wid in workers) {
+    const worker = workers[wid];
+    if (worker.socket.connected) {
+      worker.socket.emit("sync", Date.now());
+    }
+  }
+}, 300000)
+
 const q = new Queue(1, Infinity);
 function enqueue(type, data) {
   if (type == "start") {
@@ -220,6 +229,7 @@ async function relay() {
 }
 
 async function stop() {
+  clearInterval(sync);
   for (const service of services) {
     enqueue("stop", { service, "worker": workers[services_map[service.name]] });
   }

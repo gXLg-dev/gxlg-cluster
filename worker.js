@@ -12,6 +12,13 @@ const socket = io("ws://" + main.ip + ":" + main.port);
 
 const services = {};
 
+let ts = Date.now();
+const start = Date.now();
+
+socket.on("sync", t => {
+  ts = t;
+});
+
 let blink = true;
 let identify = false;
 if (raspi) {
@@ -23,16 +30,23 @@ if (raspi) {
         const { open, config } = await services[service];
         if (open) ram += config.ram;
       }
-      const sleep = 1000 * (1 - ram / worker.ram);
+
+      const tacts = Math.ceil(16 * ram / worker.ram);
+      const pass = (Date.now() - start) % 4000;
+      const sleep = (ts % 4000 - pass + 4000) % 4000;
       await new Promise(r => setTimeout(r, sleep))
-      rpio.write(37, rpio.HIGH);
+
       if (identify) {
+        rpio.write(37, rpio.HIGH);
         await new Promise(r => setTimeout(r, 4000))
-        identify = false;
+        rpio.write(37, rpio.LOW);
       } else {
-        await new Promise(r => setTimeout(r, 100))
+        for (let i = 0; i < tacts; i++) {
+          rpio.write(37, rpio.HIGH);
+          await new Promise(r => setTimeout(r, 250));
+          rpio.write(37, rpio.LOW);
+        }
       }
-      rpio.write(37, rpio.LOW);
     }
     console.log("end");
   })();
