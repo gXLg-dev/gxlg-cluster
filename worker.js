@@ -13,7 +13,7 @@ const socket = io("ws://" + main.ip + ":" + main.port);
 const services = {};
 
 let ts = Date.now();
-const start = Date.now();
+const tstart = Date.now();
 
 socket.on("sync", t => {
   ts = t;
@@ -31,8 +31,8 @@ if (raspi) {
         if (open) ram += config.ram;
       }
 
-      const tacts = Math.ceil(16 * ram / worker.ram);
-      const pass = (Date.now() - start) % 4000;
+      const tacts = Math.max(1, Math.ceil(16 * ram / worker.ram));
+      const pass = (Date.now() - tstart) % 4000;
       const sleep = (ts % 4000 - pass + 4000) % 4000;
       await new Promise(r => setTimeout(r, sleep))
 
