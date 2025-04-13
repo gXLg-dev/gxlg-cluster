@@ -35,7 +35,7 @@ const sync = setInterval(() => {
       worker.socket.emit("sync", Date.now());
     }
   }
-}, 300000)
+}, 60000);
 
 const q = new Queue(1, Infinity);
 function enqueue(type, data) {

@@ -40,6 +40,7 @@ if (raspi) {
         rpio.write(37, rpio.HIGH);
         await new Promise(r => setTimeout(r, 4000))
         rpio.write(37, rpio.LOW);
+        identify = false;
       } else {
         const st = Date.now();
         for (let i = 0; i < tacts; i++) {
