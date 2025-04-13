@@ -12,11 +12,10 @@ const socket = io("ws://" + main.ip + ":" + main.port);
 
 const services = {};
 
-let ts = Date.now();
-const tstart = Date.now();
+let delta = 0;
 
 socket.on("sync", t => {
-  ts = t;
+  delta = Date.now() - t;
 });
 
 let blink = true;
@@ -31,14 +30,13 @@ if (raspi) {
         if (open) ram += config.ram;
       }
 
-      const tacts = Math.max(1, Math.ceil(16 * ram / worker.ram));
-      const pass = (Date.now() - tstart) % 4000;
-      const sleep = (ts % 4000 - pass + 4000) % 4000;
-      await new Promise(r => setTimeout(r, sleep))
+      const tacts = Math.ceil(1 + 15 * ram / worker.ram);
+      const next = 4000 - (Date.now() - delta) % 4000;
+      await new Promise(r => setTimeout(r, next))
 
       if (identify) {
         rpio.write(37, rpio.HIGH);
-        await new Promise(r => setTimeout(r, 4000))
+        await new Promise(r => setTimeout(r, 3500))
         rpio.write(37, rpio.LOW);
         identify = false;
       } else {
@@ -48,7 +46,9 @@ if (raspi) {
           rpio.write(37, rpio.HIGH);
           await new Promise(r => setTimeout(r, st + i * 250 - d + 100));
           rpio.write(37, rpio.LOW);
-          await new Promise(r => setTimeout(r, st + i * 250 - d + 150));
+          if (i + 1 < tacts) {
+            await new Promise(r => setTimeout(r, st + i * 250 - d + 150));
+          }
         }
       }
     }
