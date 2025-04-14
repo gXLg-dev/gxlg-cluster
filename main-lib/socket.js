@@ -42,18 +42,18 @@ function enqueue(type, data) {
   if (type == "start") {
     const { worker, service } = data;
     q.add(async () => {
-      console.log("starting", service.name);
+      console.log("Q starting", service.name);
       while (service_status[service.name] != 0) await poll();
       if (worker.socket.connected) {
         worker.socket.emit("start", service.name, service.port);
         services_map[service.name] = worker.id;
-        while (![3,4].includes(service_status[service.name])) await poll();
+        while (![3, 4].includes(service_status[service.name])) await poll();
       }
     });
   } else if (type == "stop") {
     const { worker, service } = data;
     q.add(async () => {
-      console.log("stopping", service.name);
+      console.log("Q stopping", service.name);
       if (worker) {
         if (worker.socket.connected) worker.socket.emit("stop", service.name);
         while (![0, 3].includes(service_status[service.name])) await poll();
@@ -65,13 +65,13 @@ function enqueue(type, data) {
   } else if (type == "error") {
     const { service } = data;
     q.add(async () => {
-      console.log("error on", service.name);
+      console.log("Q error on", service.name);
       delete services_map[service.name];
     });
   } else if (type == "remove") {
     const { worker, service } = data;
     q.add(async () => {
-      console.log("removing", service.name);
+      console.log("Q removing", service.name);
       if (worker) {
         if (worker.socket.connected) worker.socket.emit("stop", service.name);
         while (![0, 3].includes(service_status[service.name])) await poll();
@@ -84,30 +84,30 @@ function enqueue(type, data) {
   } else if (type == "delete") {
     const { id } = data;
     q.add(() => {
-      console.log("deleting", id);
+      console.log("Q deleting", id);
       if (id in workers && workers[id].socket.connected) workers[id].socket.emit("shutdown");
       delete workers[id];
     });
   } else if (type == "exit") {
     const { res } = data;
     q.add(() => {
-      console.log("exitting");
+      console.log("Q exitting");
       server.close();
       res();
     });
   } else if (type == "relay") {
     const { last } = data;
     q.add(async () => {
-      console.log("relaying");
+      console.log("Q relaying");
       if (last_relay == last) await relay();
       else console.log("dequeue relay");
     });
   } else if (type == "restart") {
     const { last } = data;
     q.add(async () => {
-      console.log("restarting tunnel");
+      console.log("Q restarting tunnel");
       if (last_restart == last) await restart_tunnel();
-      else console.log("dequeue restart");
+      else console.log("Q dequeue restart");
     });
   } else if (type == "shutdown") {
     const { worker } = data;
