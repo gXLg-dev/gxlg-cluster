@@ -6,7 +6,6 @@ const { panel, turnstile } = require("../common-lib/config.js");
 
 const ts = nturnstile({ ...turnstile });
 
-
 let server;
 (async () => {
   server = await nulls({
@@ -19,7 +18,8 @@ let server;
       const token = req.cookies["token.cluster"];
       req.auth = check(token);
     },
-    "domain": panel.record
+    "domain": panel.record,
+    "proxies": 1
   });
 })();
 
