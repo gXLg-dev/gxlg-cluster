@@ -5,12 +5,13 @@
     <meta charset="utf-8">
 
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Nova+Square&display=swap');
+
       [data-status] {
         border: 1px solid black;
         border-radius: 5px;
         padding: 5px;
       }
-
       [data-status="0"] { background-color: lightgrey; }
       [data-status="1"] { background-color: lightblue; }
       [data-status="2"] { background-color: gold; }
@@ -18,11 +19,14 @@
       [data-status="4"] { background-color: lightgreen; }
 
       .item {
-        border: 1px solid black;
         border-radius: 10px;
         padding: 10px;
         margin: 10px;
         max-width: 500px;
+
+        background-color: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
 
       a { color: black; }
@@ -31,12 +35,20 @@
 
       button>img { position: relative; top: 2px; }
       img { height: 16px; }
-      * { font-size: 22px; }
+      * {
+        font-family: "Nova Square", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+        font-size: 22px;
+      }
 
       .nav {
         display: flex;
-        border-bottom: 1px solid black;
         padding: 20px;
+
+        background-color: rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
       .nav>span { flex: 1; display: flex; justify-content: center; }
 
@@ -51,6 +63,18 @@
         border-radius: 5px;
         padding: 8px;
       }
+
+      html {
+        background-image: url("/static/lain.png");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: 36% 50%;
+      }
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
 
     </style>
   </head>

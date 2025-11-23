@@ -18,6 +18,7 @@ let server;
       const token = req.cookies["token.cluster"];
       req.auth = check(token);
     },
+    "ready": () => console.log("Panel up!"),
     "domain": panel.record,
     "proxies": 1,
     "redirects": { "/landing": () => "/" }
