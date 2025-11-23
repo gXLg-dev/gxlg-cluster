@@ -84,7 +84,7 @@ async function start(service, port) {
 
   socket.emit("status", service, 1);
   if (config.dependencies) {
-    const i = spawn("sh", ["-c", [worker.install, ...config.dependencies].join(" ")]);
+    const i = spawn("bash", ["-c", [worker.install, ...config.dependencies].join(" ")]);
     const j = await new Promise(r => i.once("exit", c => r(c)));
     if (j != 0) {
       socket.emit("status", service, 3);
@@ -93,7 +93,7 @@ async function start(service, port) {
   }
   if (config.setup) {
     for (const s of config.setup) {
-      const i = spawn("sh", ["-c", s]);
+      const i = spawn("bash", ["-c", s]);
       const j = await new Promise(r => i.once("exit", c => r(c)));
       if (j != 0) {
         socket.emit("status", service, 3);
@@ -107,7 +107,7 @@ async function start(service, port) {
   console.log("Starting", service);
   const pipe = fs.createWriteStream("./worker-logs/" + service + ".txt");
 
-  const proc = spawn("sh", ["-c", start], { cwd });
+  const proc = spawn("bash", ["-c", start], { cwd });
   proc.on("close", () => pipe.end());
   proc.on("exit", async code => {
     if (service in services) {
