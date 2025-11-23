@@ -19,7 +19,8 @@ let server;
       req.auth = check(token);
     },
     "domain": panel.record,
-    "proxies": 1
+    "proxies": 1,
+    "redirects": { "/landing": () => "/" }
   });
 })();
 
