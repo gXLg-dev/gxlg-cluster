@@ -6,8 +6,10 @@ const { panel, turnstile } = require("../common-lib/config.js");
 
 const ts = nturnstile({ ...turnstile });
 
-let server;
-(async () => {
+let server = null;
+async function reload() {
+  console.log("||| Reloading panel");
+  close();
   server = await nulls({
     "plugins": [ts],
     "nulls": "main-lib/panel/html",
@@ -18,15 +20,17 @@ let server;
       const token = req.cookies["token.cluster"];
       req.auth = check(token);
     },
-    "ready": () => console.log("Panel up!"),
+    "ready": () => console.log("||| Panel up!"),
     "domain": panel.record,
     "proxies": 1,
     "redirects": { "/landing": () => "/" }
   });
-})();
+}
+reload();
 
 function close() {
-  server.close();
+  console.log("||| Closing panel");
+  if (server != null) server.close();
 }
 
-module.exports = { close };
+module.exports = { close, reload };
