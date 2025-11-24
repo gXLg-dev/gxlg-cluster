@@ -2,14 +2,14 @@
   <div class="item">
     <b><span null-data="(q,r,s)=>s.name"></span></b>
     <br>
-    <span><img src="/static/port.png"> <span null-data="(q,r,s)=>s.port?':'+s.port:'none'"></span></span>
+    <div null-container="#expose.html" null-if="(r,q,s)=>s.record"></div>
+    <div>
+      <img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker"></span>
+    </div>
+    <div>
+      <img src="/static/chip.png"> <span null-data="(q,r,s)=>s.ram+' MB'"></span>
+    </div>
     <br>
-    <span><img src="/static/website.png"> <span><a null-attr="(q,r,s)=>({'href':(s.record?'https://'+s.record:null)})" null-data="(q,r,s)=>s.record??'none'"></a></span></span>
-    <br>
-    <span><img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker"></span></span>
-    <br>
-    <span><img src="/static/chip.png"> <span null-data="(q,r,s)=>s.ram+' MB'"></span></span>
-    <br><br>
     <span null-attr="(q,r,s)=>({'data-status':s.status})" null-data="(q,r,s)=>['Stopped','Installing dependencies','Stopping','Error','Running'][s.status]"></span>
     <form class="button" action="/api/restart_service" null-api="$main-lib/panel/js/restart.js">
       <input type="hidden" name="name" null-attr="(q,r,s)=>({'value':s.name})">
