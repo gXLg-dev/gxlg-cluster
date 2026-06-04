@@ -148,7 +148,7 @@ class Manager {
         } else {
           move = 2;
         }
-        if (move <= min_move && devia < min_devia) {
+        if (move < min_move || (move == min_move && devia < min_devia)) {
           min_move = move;
           min_devia = devia;
           best_worker = worker;
