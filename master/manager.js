@@ -120,7 +120,7 @@ class Manager {
 
     const ram_groups = { };
     for (const worker of workers) {
-      ram_groups[worker.name] = 0;
+      ram_groups[worker.id] = 0;
     }
 
     const pairs = new Set(this.pairs);
@@ -134,7 +134,7 @@ class Manager {
       let min_move = Infinity;
       let min_devia = Infinity;
       for (const worker of workers) {
-        const new_total = ram_groups[worker.name] + ram;
+        const new_total = ram_groups[worker.id] + ram;
         if (new_total > worker_ram) {
           continue;
         }
@@ -167,7 +167,7 @@ class Manager {
         }
       }
       if (best_worker != null) {
-        ram_groups[best_worker.name] += ram;
+        ram_groups[best_worker.id] += ram;
       }
     }
     this.pairs = pairs;
