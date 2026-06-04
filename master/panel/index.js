@@ -56,8 +56,8 @@ class Panel extends Simplex {
 
   close() {
     if (this.server != null) {
-      console.log("||| Closing panel");
       this.server.close();
+      console.log("||| Panel closed");
     }
   }
 }

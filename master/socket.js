@@ -51,6 +51,7 @@ class Socket extends Simplex {
   async stop() {
     clearInterval(this.sync_interval);
     await new Promise(r => this.server.close(r));
+    console.log("Socket server stopped");
   }
 
 }

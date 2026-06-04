@@ -184,6 +184,7 @@ class Tunnel extends Simplex {
       clearTimeout(force);
       this.current_tunnel = null;
     }
+    console.log("Tunnel stopped");
   }
 }
 
