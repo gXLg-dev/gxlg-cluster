@@ -193,7 +193,7 @@ class Manager {
       await assigned_worker.stop_service(service);
       service.reload();
       this.errored_services.delete(service);
-      await aissgned_worker.start_service(service);
+      await assigned_worker.start_service(service);
     }
 
     this.schedule_reload();
