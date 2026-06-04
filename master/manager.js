@@ -45,7 +45,7 @@ class Manager {
       if (!fs.existsSync("./services/" + dir + "/gxlg-cluster.json")) {
         continue;
       }
-      load_service(dir);
+      this.load_service(dir);
     }
 
     // 2. Set up communication
