@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Nova+Square&family=Syne+Mono&display=swap');
+
+      [data-status] {
+        border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+      }
+      /* stopped */
+      [data-status="0"] { background-color: lightgrey; }
+      /* working */
+      [data-status="1"] { background-color: lightgreen; }
+      /* error */
+      [data-status="2"] { background-color: coral; }
+
+      .item {
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px;
+        max-width: 530px;
+
+        background-color: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      a { color: black; }
+
+      .button { display: inline-block; }
+
+      button>img { position: relative; top: 2px; }
+      img { height: 16px; }
+      body, input, button {
+        font-family: "Nova Square", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+        font-size: 22px;
+      }
+
+      .nav {
+        display: flex;
+        padding: 20px;
+
+        background-color: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .nav>span { flex: 1; display: flex; justify-content: center; }
+
+      .content {
+        padding: 30px 10%;
+      }
+
+      .terminal {
+        font-family: "Syne Mono", monospace;
+        font-weight: 400;
+        font-style: normal;
+        font-size: 12px;
+
+        background-color: teal;
+        color: white;
+        border-radius: 5px;
+        padding: 8px;
+      }
+
+      html {
+        background-image: url("/static/lain.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: 36% 50%;
+      }
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: scroll;
+      }
+
+      button, input {
+        margin-top: 5px;
+        padding: 4px 9px;
+        background-color: white;
+        border: 1px solid black;
+        border-radius: 5px;
+      }
+
+      button:hover, input:hover, input:focus {
+        background-color: rgba(0, 0, 0, 0.4);
+        color: white;
+        outline: none;
+        box-shadow: none;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div class="nav">
+      <span><a href="/workers"><img src="/static/raspberry.png"> Workers</a></span>
+      <span><a href="/services"><img src="/static/service.png"> Services</a></span>
+      <span><a href="/tools"><img src="/static/tools.png"> Tools</a></span>
+    </div>
+    <div class="content" null-container="req=>req.auth?({'/services':'services.html','/tools':'tools.html'}[req.path]??'workers.html'):'login.html'"></div>
+  </body>
+</html>

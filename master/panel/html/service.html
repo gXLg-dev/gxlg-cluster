@@ -1,0 +1,19 @@
+<div>
+  <div class="item">
+    <b><span null-data="(q,r,s)=>s.name"></span></b>
+    <br>
+    <div null-container="#expose.html" null-if="(r,q,s)=>s.record"></div>
+    <div>
+      <img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker"></span>
+    </div>
+    <div>
+      <img src="/static/chip.png"> <span null-data="(q,r,s)=>s.ram+' MB'"></span>
+    </div>
+    <br>
+    <span null-attr="(q,r,s)=>({'data-status':s.status})" null-data="(q,r,s)=>['Stopped','Running','Error'][s.status]"></span>
+    <form class="button" action="/api/restart_service" null-api="$panel/js/restart.js">
+      <input type="hidden" name="name" null-attr="(q,r,s)=>({'value':s.name})">
+      <button type="submit"><img src="/static/restart.png"> (Re-)start</button>
+    </form>
+  </div>
+</div>
