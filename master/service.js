@@ -1,3 +1,5 @@
+const fs = require("fs");
+
 class Service {
   constructor(directory, port_assigner) {
     this.name = directory;
