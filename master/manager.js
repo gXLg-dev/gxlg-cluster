@@ -243,7 +243,7 @@ class Manager {
     const ws = [];
     for (const w of this.workers) {
       const services = this.pairs.values()
-        .filter(p => p.worker == w).toArray();
+        .filter(p => p.worker == w).map(p => p.service).toArray();
       const ram = services.reduce((acc, s) => acc + s.config.ram, 0);
       const names = services.map(s => s.name);
       const temp = await w.temp();
