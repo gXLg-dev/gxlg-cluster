@@ -8,6 +8,8 @@ const rpio = raspi ? require("rpio") : null;
 const { master, worker } = require("../common/config.js");
 const name = require("./name");
 
+console.log("% Booting up", name);
+
 const socket = io("ws://" + master.ip + ":" + master.port);
 const services = {};
 
