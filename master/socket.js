@@ -1,3 +1,4 @@
+const fs = require("fs");
 const { Server } = require("socket.io");
 
 const { Worker } = require("./worker.js");
