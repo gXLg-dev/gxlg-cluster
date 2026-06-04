@@ -1,3 +1,3 @@
 #!/bin/bash
 
-screen -dmS cluster -- bash -c "node master | tee log.txt"
+screen -L -Logfile log.txt -dmS cluster -- node master
