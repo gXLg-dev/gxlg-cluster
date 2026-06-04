@@ -190,7 +190,7 @@ class Manager {
       .find(p => p.service == service)?.worker;
 
     if (assigned_worker != null) {
-      await aissgned_worker.stop_service(service);
+      await assigned_worker.stop_service(service);
       service.reload();
       this.errored_services.delete(service);
       await aissgned_worker.start_service(service);
