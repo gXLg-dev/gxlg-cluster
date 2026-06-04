@@ -4,7 +4,7 @@
     <br>
     <div null-container="#expose.html" null-if="(r,q,s)=>s.record"></div>
     <div>
-      <img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker"></span>
+      <img src="/static/raspberry.png"> <span null-data="(q,r,s)=>s.worker??'Not assigned'"></span>
     </div>
     <div>
       <img src="/static/chip.png"> <span null-data="(q,r,s)=>s.ram+' MB'"></span>
