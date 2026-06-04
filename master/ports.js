@@ -21,7 +21,7 @@ class PortAssigner {
   }
 
   assign_port() {
-    if (this.pool.size == 0) fill_pool();
+    if (this.pool.size == 0) this.fill_pool();
 
     const port = this.pool.values().reduce((acc, v) => Math.min(acc, v), Infinity);
     this.pool.delete(port);
