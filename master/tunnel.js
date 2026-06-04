@@ -57,7 +57,8 @@ class Tunnel extends Simplex {
     ];
     const records = [];
     for (const { worker, service } of pairs) {
-      const { name, record, port, protocol } = service;
+      const { name, port, config } = service;
+      const { record, protocol } = config;
       if (!record) continue;
       const { ip } = worker;
       const prot = protocol ?? "http";
