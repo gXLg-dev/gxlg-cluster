@@ -132,3 +132,4 @@ dist
 # Project files
 config.json
 .tunnel
+log.txt
