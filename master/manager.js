@@ -151,7 +151,7 @@ class Manager {
         if (move <= min_move && devia < min_devia) {
           min_move = move;
           min_devia = devia;
-          best_worker = wid;
+          best_worker = worker;
         }
       }
       if (assigned_worker != best_worker) {
