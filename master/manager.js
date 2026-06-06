@@ -125,7 +125,6 @@ class Manager {
 
     const pairs = new Set(this.pairs);
 
-    let need_restart_tunnel = false;
     for (const service of services) {
       const ram = service.config.ram;
       const assigned_pair = pairs.values().find(p => p.service == service);

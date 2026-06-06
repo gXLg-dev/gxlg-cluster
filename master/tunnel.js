@@ -91,7 +91,7 @@ class Tunnel extends Simplex {
       if (tunnel.should_run) {
         this.current_tunnel = null;
         console.log("! tunnel died unexpectedly");
-        this.send("schedule_restart");
+        this.send("schedule_reload");
       }
     });
 
@@ -115,7 +115,7 @@ class Tunnel extends Simplex {
           // if "frozen" aka Cloudflare can't reach the tunnel
           if (e.status == 530) {
             console.log("! tunnel is frozen");
-            this.send("schedule_restart");
+            this.send("schedule_reload");
           }
         }
       }, 60000);
