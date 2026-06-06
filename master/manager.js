@@ -51,7 +51,10 @@ class Manager {
     // 2. Set up communication
     this.socket.receive("register_worker", w => this.register_worker(w));
     this.socket.receive("unregister_worker", w => this.unregister_worker(w));
-    this.socket.receive("error_service", s => this.error_service(s));
+    this.socket.receive(
+      "error_service",
+      n => this.error_service(this.find_service(n))
+   );
 
     this.panel.receive("query_services", () => this.query_services());
     this.panel.receive(
