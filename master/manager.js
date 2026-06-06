@@ -169,7 +169,16 @@ class Manager {
         ram_groups[best_worker.id] += ram;
       }
     }
-    this.pairs = pairs;
+    // stop abandoned services
+    const final_pairs = new Set();
+    for (const { service, worker } of pairs) {
+      if (this.services.has(service)) {
+        final_pairs.add({ service, worker });
+      } else {
+        await worker.stop_service(service);
+      }
+    }
+    this.pairs = final_pairs;
     await this.tunnel.restart(this.pairs);
   }
 
