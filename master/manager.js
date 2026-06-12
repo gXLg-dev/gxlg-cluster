@@ -105,6 +105,7 @@ class Manager {
   // Receiver
   async schedule_reload() {
     this.reload_pipe.add(() => {
+      this.logger.log("Scheduling reload...");
       clearTimeout(this.reload_timeout);
       if (this.stopping) return;
       this.reload_timeout = setTimeout(() => this.reload(), RELOAD_WAIT_TIME);
@@ -112,7 +113,7 @@ class Manager {
   }
 
   async reload() {
-    this.logger.log("Reloading");
+    this.logger.log("Reloading...");
 
     // pairing algorithm
     const services = this.get_active_services();
@@ -189,6 +190,8 @@ class Manager {
     }
     this.pairs = final_pairs;
     await this.tunnel.restart(this.pairs);
+
+    this.logger.log("Reloading complete!");
   }
 
   get_active_services() {
@@ -226,6 +229,7 @@ class Manager {
 
   // Receiver
   error_service(service) {
+    this.logger.log("Error in service", service.name);
     service.unregister();
     this.errored_services.add(service);
     this.schedule_reload();
