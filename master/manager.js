@@ -19,7 +19,7 @@ class Manager {
 
     this.socket = new Socket(config, io);
     this.panel = new Panel(config, io);
-    this.tunnel = new Tunnel(config, io;
+    this.tunnel = new Tunnel(config, io);
 
     this.port_assigner = new PortAssigner(PORT_MIN, PORT_MAX);
     this.workers = new Set();
