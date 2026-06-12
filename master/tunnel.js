@@ -9,7 +9,7 @@ const raspi = require("../common/raspi.js");
 const base = "https://api.cloudflare.com/client/v4/";
 
 class Tunnel extends Simplex {
-  constructor(config) {
+  constructor(config, io) {
     super();
 
     const { cloudflare, cloudflared, panel } = config;
@@ -21,6 +21,8 @@ class Tunnel extends Simplex {
       "X-Auth-Email": cloudflare.email
     };
     this.panel_record = panel.record;
+
+    this.logger = io.loggerFor("tunnel");
 
     this.uuid = null;
     this.tunnel_interval = null;
@@ -41,7 +43,7 @@ class Tunnel extends Simplex {
         console.error(out.stderr.toString());
         throw new Error("Could not create the tunnel, please check if you are logged in!");
       } else {
-        console.log(out.stdout.toString());
+        this.logger.log(out.stdout.toString());
       }
     }
     this.uuid = JSON.parse(fs.readFileSync(".tunnel/tunnel.json")).TunnelID;
@@ -77,7 +79,7 @@ class Tunnel extends Simplex {
     fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
 
     // start the tunnel
-    console.log("> run tunnel");
+    this.logger.log("Starting...");
     const tunnel = spawn(
       this.cf,
       [
@@ -90,7 +92,7 @@ class Tunnel extends Simplex {
     tunnel.once("exit", () => {
       if (tunnel.should_run) {
         this.current_tunnel = null;
-        console.log(">! tunnel died unexpectedly");
+        this.logger.log("Died unexpectedly!");
         this.send("schedule_reload");
       }
     });
@@ -101,25 +103,24 @@ class Tunnel extends Simplex {
     }
 
     // stop old tunnel (also stop polling) and switch
-    console.log("> kill old");
+    this.logger.log("Stopping old tunnel...");
     await this.stop();
     this.current_tunnel = tunnel;
 
-    // restart polling again later
-    console.log("> setup polling");
-
+    // restart polling again
+    this.logger.log("Setting up polling...");
     let logged_first = false;
     this.tunnel_interval = setInterval(async () => {
       try {
         if (!logged_first) {
-          console.log("> tunnel polling initiated")
+          this.logger.log("Polling initiated (first)");
           logged_first = true;
         }
         await axios.get("https://" + panel.record);
       } catch (e) {
         // if "frozen" aka Cloudflare can't reach the tunnel
         if (e.status == 530) {
-          console.log(">! tunnel is frozen");
+          this.logger.log("Frozen!");
           this.send("schedule_reload");
         }
       }
@@ -175,7 +176,7 @@ class Tunnel extends Simplex {
   }
 
   async stop() {
-    console.log("> clear polling");
+    this.logger.log("Polling cleared");
     clearInterval(this.tunnel_interval);
     const tunnel = this.current_tunnel;
     if (tunnel != null) {
@@ -183,14 +184,14 @@ class Tunnel extends Simplex {
       const p = new Promise(r => tunnel.once("exit", r));
       tunnel.kill("SIGINT");
       const force = setTimeout(() => {
-        console.log("> force killing tunnel");
+        this.logger.log("Force killing...");
         tunnel.kill("SIGKILL");
       }, 5000);
       await p;
       clearTimeout(force);
       this.current_tunnel = null;
     }
-    console.log("> tunnel stopped");
+    this.logger.log("Tunnel stopped");
   }
 }
 

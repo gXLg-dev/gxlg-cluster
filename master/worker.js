@@ -7,14 +7,12 @@ class Worker {
 
   async start_service(service) {
     if (this.socket.connected) {
-      console.log("Starting", service.name, "on", this.id);
       await this.socket.emitWithAck("start_service", service.name, service.port);
     }
   }
 
   async stop_service(service) {
     if (this.socket.connected) {
-      console.log("Stopping", service.name, "on", this.id);
       await this.socket.emitWithAck("stop_service", service.name);
     }
   }

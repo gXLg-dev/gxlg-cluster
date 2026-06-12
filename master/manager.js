@@ -13,11 +13,13 @@ const PORT_MIN = 18000;
 const PORT_MAX = 18500;
 
 class Manager {
-  constructor(config) {
+  constructor(config, io) {
     this.config = config;
-    this.socket = new Socket(config);
-    this.panel = new Panel(config);
-    this.tunnel = new Tunnel(config);
+    this.logger = io.loggerFor("manager");
+
+    this.socket = new Socket(config, io);
+    this.panel = new Panel(config, io);
+    this.tunnel = new Tunnel(config, io;
 
     this.port_assigner = new PortAssigner(PORT_MIN, PORT_MAX);
     this.workers = new Set();
@@ -110,7 +112,7 @@ class Manager {
   }
 
   async reload() {
-    console.log("Reloading");
+    this.logger.log("Reloading");
 
     // pairing algorithm
     const services = this.get_active_services();
@@ -159,12 +161,16 @@ class Manager {
       if (assigned_worker != best_worker) {
         if (assigned_worker != null) {
           // stop service on old worker
+          this.logger.log("Stopping", service.name, "on", best_worker.id, "...");
           await assigned_worker.stop_service(service);
+          this.logger.log(service.name, "stopped");
           pairs.delete(assigned_pair);
         }
         if (best_worker != null) {
           // start service on new worker
+          this.logger.log("Starting", service.name, "on", best_worker.id, "...");
           await best_worker.start_service(service);
+          this.logger.log(service.name, "started");
           pairs.add({ "worker": best_worker, service });
         }
       }

@@ -6,7 +6,7 @@ const { Simplex } = require("./simplex.js");
 const SYNC_TIME = 60000;
 
 class Socket extends Simplex {
-  constructor(config) {
+  constructor(config, io) {
     super();
 
     const { master, worker } = config;
@@ -14,6 +14,8 @@ class Socket extends Simplex {
     this.server = new Server(master.port, {
       "cors": { "origin": "*" }
     });
+
+    this.logger = io.loggerFor("socket");
 
     this.sync_interval = null;
   }
@@ -27,11 +29,11 @@ class Socket extends Simplex {
         socket.disconnect(true);
         return;
       }
-      console.log("Connected:", id);
+      this.logger.log("Connected:", id);
       const ip = socket.handshake.address;
       const worker = new Worker(id, ip, socket);
       socket.on("disconnect", () => {
-        console.log("Disconnected:", id);
+        this.logger.log("Disconnected:", id);
         this.send("unregister_worker", worker);
       });
       socket.on(
@@ -51,7 +53,7 @@ class Socket extends Simplex {
   async stop() {
     clearInterval(this.sync_interval);
     await new Promise(r => this.server.close(r));
-    console.log("Socket server stopped");
+    this.logger.log("Socket server stopped");
   }
 
 }

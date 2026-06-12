@@ -6,13 +6,15 @@ const { Simplex } = require("../simplex.js");
 const { Auth } = require("./js/auth.js");
 
 class Panel extends Simplex {
-  constructor(config) {
+  constructor(config, io) {
     super();
 
     const { panel, turnstile } = config;
     this.panel_record = panel.record;
     this.ts_plugin = nturnstile({ ...turnstile });
     this.auth = new Auth(config);
+
+    this.logger = io.loggerFor("panel");
 
     this.api = new Simplex();
 
@@ -47,7 +49,7 @@ class Panel extends Simplex {
         req.auth_api = this.auth;
         req.api = this.api;
       },
-      "ready": () => console.log("||| Panel up!"),
+      "ready": () => this.logger.log("Panel up!"),
       "domain": this.panel_record,
       "proxies": 1,
       "redirects": { "/landing": () => "/" }
@@ -57,7 +59,7 @@ class Panel extends Simplex {
   close() {
     if (this.server != null) {
       this.server.close();
-      console.log("||| Panel closed");
+      this.logger.log("Panel closed");
     }
   }
 }
