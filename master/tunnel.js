@@ -90,7 +90,7 @@ class Tunnel extends Simplex {
     tunnel.once("exit", () => {
       if (tunnel.should_run) {
         this.current_tunnel = null;
-        console.log("! tunnel died unexpectedly");
+        console.log(">! tunnel died unexpectedly");
         this.send("schedule_reload");
       }
     });
@@ -107,19 +107,24 @@ class Tunnel extends Simplex {
 
     // restart polling again later
     console.log("> setup polling");
-    setTimeout(() => {
-      this.tunnel_interval = setInterval(async () => {
-        try {
-          await axios.get("https://" + panel.record);
-        } catch (e) {
-          // if "frozen" aka Cloudflare can't reach the tunnel
-          if (e.status == 530) {
-            console.log("! tunnel is frozen");
-            this.send("schedule_reload");
-          }
+
+    let logged_first = false;
+    this.tunnel_interval = setInterval(async () => {
+      try {
+        if (!logged_first) {
+          console.log("> tunnel polling initiated")
+          logged_first = true;
         }
-      }, 60000);
-    }, 10000);
+        await axios.get("https://" + panel.record);
+      } catch (e) {
+        // if "frozen" aka Cloudflare can't reach the tunnel
+        if (e.status == 530) {
+          console.log(">! tunnel is frozen");
+          this.send("schedule_reload");
+        }
+      }
+    }, 60000);
+
   }
 
   async create_record(record) {
@@ -170,6 +175,7 @@ class Tunnel extends Simplex {
   }
 
   async stop() {
+    console.log("> clear polling");
     clearInterval(this.tunnel_interval);
     const tunnel = this.current_tunnel;
     if (tunnel != null) {
@@ -177,14 +183,14 @@ class Tunnel extends Simplex {
       const p = new Promise(r => tunnel.once("exit", r));
       tunnel.kill("SIGINT");
       const force = setTimeout(() => {
-        console.log("Force killing tunnel");
+        console.log("> force killing tunnel");
         tunnel.kill("SIGKILL");
       }, 5000);
       await p;
       clearTimeout(force);
       this.current_tunnel = null;
     }
-    console.log("Tunnel stopped");
+    console.log("> tunnel stopped");
   }
 }
 
