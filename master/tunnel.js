@@ -116,7 +116,7 @@ class Tunnel extends Simplex {
           this.logger.log("Polling initiated (first)");
           logged_first = true;
         }
-        await axios.get("https://" + panel.record);
+        await axios.get("https://" + this.panel_record);
       } catch (e) {
         // if "frozen" aka Cloudflare can't reach the tunnel
         if (e.status == 530) {
