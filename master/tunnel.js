@@ -176,7 +176,7 @@ class Tunnel extends Simplex {
   }
 
   async stop() {
-    this.logger.log("Polling cleared");
+    this.logger.log("Polling cleared, stopping tunnel...");
     clearInterval(this.tunnel_interval);
     const tunnel = this.current_tunnel;
     if (tunnel != null) {
