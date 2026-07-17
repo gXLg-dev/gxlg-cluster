@@ -51,7 +51,7 @@ class Tunnel extends Simplex {
     // generate new ingres
     const generator = new IngressGenerator(this.uuid, this.panel_record);
     for (const { worker, service } of pairs) {
-      builder.add_service(service);
+      generator.add_service(service);
     }
     generator.generate_ingress();
 
