@@ -8,6 +8,7 @@ class Service {
     this.port = null;
     this.config = null;
 
+    this.cache_cleared = false;
     this.reload();
   }
 
@@ -17,12 +18,17 @@ class Service {
       if (!this.port) {
         this.port = this.port_assigner.assign_port();
       }
+      this.cache_cleared = false;
     } else {
       if (this.port) {
         this.port_assigner.release_port(this.port);
       }
       this.port = null;
     }
+  }
+
+  confirm_cache_clear() {
+    this.cache_cleared = true;
   }
 
   unregister() {

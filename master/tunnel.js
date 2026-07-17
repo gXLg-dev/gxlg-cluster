@@ -2,24 +2,21 @@ const os = require("os");
 const fs = require("fs");
 const axios = require("axios");
 const { spawn } = require("child_process");
+const Queue = require("promise-queue");
 
 const { Simplex } = require("./simplex.js");
+const { CloudflareAPI } = require("./cloudflare.js");
+const { IngressGenerator } = require("./ingress.js");
 const raspi = require("../common/raspi.js");
-
-const base = "https://api.cloudflare.com/client/v4/";
 
 class Tunnel extends Simplex {
   constructor(config, io) {
     super();
 
-    const { cloudflare, cloudflared, panel } = config;
+    const { cloudflared, cloudflare, panel } = config;
 
     this.cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
-    this.headers = {
-      "Content-Type": "application/json",
-      "X-Auth-Key": cloudflare.api_key,
-      "X-Auth-Email": cloudflare.email
-    };
+    this.api = new CloudflareAPI(cloudflare);
     this.panel_record = panel.record;
 
     this.logger = io.loggerFor("tunnel");
@@ -27,6 +24,7 @@ class Tunnel extends Simplex {
     this.uuid = null;
     this.tunnel_interval = null;
     this.current_tunnel = null;
+    this.replace_pipe = new Queue(1, Infinity);
   }
 
   async init() {
@@ -51,35 +49,29 @@ class Tunnel extends Simplex {
 
   async restart(pairs) {
     // generate new ingres
-    const ingress = [
-      "tunnel: " + this.uuid,
-      "credentials-file: .tunnel/tunnel.json",
-      "",
-      "ingress:"
-    ];
-    const records = [];
+    const generator = new IngressGenerator(this.uuid, this.panel_record);
     for (const { worker, service } of pairs) {
-      const { name, port, config } = service;
-      const { record, protocol } = config;
-      if (!record) continue;
-      const { ip } = worker;
-      const prot = protocol ?? "http";
-      ingress.push(
-        "  - hostname: " + record,
-        "    service: " + prot + "://" + ip + ":" + port
-      );
-      records.push(record);
+      builder.add_service(service);
     }
-    ingress.push(
-      "  - hostname: " + this.panel_record,
-      "    service: http://127.0.0.1:8080",
-      "  - service: http_status:404"
-    );
-    records.push(this.panel_record);
-    fs.writeFileSync(".tunnel/ingress.yml", ingress.join("\n"));
+    generator.generate_ingress();
+
+    // update DNS records for services + panel and handle cache
+    this.logger.log("Updating DNS rules...");
+    try {
+      for (const record of generator.get_dirty_cache_records()) {
+        await this.api.create_record(record, this.uuid);
+      }
+    } catch (err) {
+      this.logger.log("Unstable internet connection!");
+      this.send("schedule_reload");
+      return;
+    }
+    for (const { worker, service } of pairs) {
+      service.confirm_cache_clear();
+    }
 
     // start the tunnel
-    this.logger.log("Starting...");
+    this.logger.log("Starting new tunnel...");
     const tunnel = spawn(
       this.cf,
       [
@@ -91,107 +83,69 @@ class Tunnel extends Simplex {
     tunnel.should_run = true;
     tunnel.once("exit", () => {
       if (tunnel.should_run) {
-        this.current_tunnel = null;
+        tunnel.should_run = false;
         this.logger.log("Died unexpectedly!");
         this.send("schedule_reload");
       }
     });
 
-    // update dns rules
-    for (const record of records) {
-      await this.create_record(record);
-    }
-
-    // stop old tunnel (also stop polling) and switch
-    this.logger.log("Stopping old tunnel...");
-    await this.stop();
-    this.current_tunnel = tunnel;
-
-    // restart polling again
-    this.logger.log("Setting up polling...");
-    let logged_first = false;
-    this.tunnel_interval = setInterval(async () => {
-      try {
-        if (!logged_first) {
-          this.logger.log("Polling initiated (first)");
-          logged_first = true;
-        }
-        await axios.get("https://" + this.panel_record);
-      } catch (e) {
-        // if "frozen" aka Cloudflare can't reach the tunnel
-        if (e.status == 530) {
-          this.logger.log("Frozen!");
-          this.send("schedule_reload");
-        }
-      }
-    }, 60000);
-
-  }
-
-  async create_record(record) {
-    const headers = this.headers;
-    const domain = record.split(".").slice(-2).join(".");
-    const zones = { };
-    const rz = await axios.get(base + "zones", { headers });
-    for (const entry of rz.data.result) {
-      zones[entry.name] = entry.id;
-    }
-    if (!(domain in zones)) {
-      throw new Error(`The domain "${domain}" does not belong to you!`);
-    }
-    const zone = zones[domain];
-    const records = { };
-    const rr = await axios.get(base + "zones/" + zone + "/dns_records", { headers });
-    for (const entry of rr.data.result) {
-      if (entry.type == "CNAME") records[entry.name] = entry.id;
-    }
-
-    const settings = {
-      "type": "CNAME",
-      "name": record,
-      "content": this.uuid + ".cfargotunnel.com",
-      "proxied": true,
-      "comment": "Created for gXLg Cluster"
-    };
-    if (!(record in records)) {
-      await axios.post(
-        base + "zones/" + zone + "/dns_records",
-        settings,
-        { headers }
-      );
-    } else {
-      await axios.put(
-        base + "zones/" + zone + "/dns_records/" + records[record],
-        settings,
-        { headers }
-      );
-    }
-
-    // purge cache
-    await axios.post(
-      base + "zones/" + zone + "/purge_cache",
-      { "hosts": [record] },
-      { headers }
-    );
+    // replace the tunnel
+    await this.replace_tunnel(tunnel);
   }
 
   async stop() {
-    this.logger.log("Polling cleared, stopping tunnel...");
-    clearInterval(this.tunnel_interval);
-    const tunnel = this.current_tunnel;
-    if (tunnel != null) {
-      tunnel.should_run = false;
-      const p = new Promise(r => tunnel.once("exit", r));
-      tunnel.kill("SIGINT");
-      const force = setTimeout(() => {
-        this.logger.log("Force killing...");
-        tunnel.kill("SIGKILL");
-      }, 5000);
-      await p;
-      clearTimeout(force);
-      this.current_tunnel = null;
-    }
-    this.logger.log("Tunnel stopped");
+    await this.replace_tunnel(null);
+  }
+
+  async replace_tunnel(new_tunnel) {
+    await this.replace_pipe.add(async () => {
+      if (new_tunnel == null) {
+        this.logger.log("Shutting down tunnel...");
+      } else {
+        this.logger.log("Replacing old tunnel...");
+      }
+
+      clearInterval(this.tunnel_interval);
+      this.logger.log("Polling cleared, stopping tunnel...");
+
+      const tunnel = this.current_tunnel;
+      if (tunnel != null) {
+        tunnel.should_run = false;
+        const p = new Promise(r => tunnel.once("exit", r));
+        tunnel.kill("SIGINT");
+        const force = setTimeout(() => {
+          this.logger.log("Force killing...");
+          tunnel.kill("SIGKILL");
+        }, 5000);
+        await p;
+        clearTimeout(force);
+      }
+      this.current_tunnel = new_tunnel;
+      if (new_tunnel == null) {
+        this.logger.log("Tunnel stopped");
+        return;
+      }
+      this.logger.log("Tunnel stopped and replaced");
+
+      this.logger.log("Setting up polling...");
+      let logged_first = false;
+      this.tunnel_interval = setInterval(async () => {
+        try {
+          if (!logged_first) {
+            this.logger.log("First polling initiated");
+            logged_first = true;
+          }
+          await axios.get("https://" + this.panel_record);
+        } catch (e) {
+          // if "frozen" aka Cloudflare can't reach the tunnel
+          if (e.status == 530) {
+            this.logger.log("Frozen!");
+            this.send("schedule_reload");
+          }
+        }
+      }, 60000);
+
+    });
   }
 }
 
