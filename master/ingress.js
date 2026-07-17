@@ -12,7 +12,7 @@ class IngressGenerator {
     this.records = [panel_record];
   }
 
-  add_service(service) {
+  add_service(service, worker) {
     const { name, port, config, cache_cleared } = service;
     const { record, protocol } = config;
     if (!record) return;
