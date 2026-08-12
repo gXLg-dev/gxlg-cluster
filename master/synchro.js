@@ -1,10 +1,10 @@
 const Queue = require("promise-queue");
 
-async function createLock() {
+function createLock() {
   return new Queue(1, Infinity);
 }
 
-async function synchro(lock) {
+function synchro(lock) {
   return callback => {
     return lock.add(() => callback());
   };
