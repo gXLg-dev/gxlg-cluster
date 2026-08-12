@@ -1,7 +1,7 @@
 const Queue = require("promise-queue");
 
 const MAX_ID_LEN = 8;
-const MAX_WIDTH = 50;
+const MAX_WIDTH = 80;
 
 const PAD_MID = " ".repeat(17 + MAX_ID_LEN + 3) + " | ";
 const PAD_END = " ".repeat(17 + MAX_ID_LEN + 3) + " \\ ";
