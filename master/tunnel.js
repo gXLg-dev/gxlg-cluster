@@ -2,11 +2,11 @@ const os = require("os");
 const fs = require("fs");
 const axios = require("axios");
 const { spawn } = require("child_process");
-const Queue = require("promise-queue");
 
 const { Simplex } = require("./simplex.js");
 const { CloudflareAPI } = require("./cloudflare.js");
 const { IngressGenerator } = require("./ingress.js");
+const { createLock, synchro } = require("./synchro.js");
 const raspi = require("../common/raspi.js");
 
 class Tunnel extends Simplex {
@@ -24,7 +24,7 @@ class Tunnel extends Simplex {
     this.uuid = null;
     this.tunnel_interval = null;
     this.current_tunnel = null;
-    this.replace_pipe = new Queue(1, Infinity);
+    this.replace_lock = createLock();
   }
 
   async init() {
@@ -83,7 +83,6 @@ class Tunnel extends Simplex {
     tunnel.should_run = true;
     tunnel.once("exit", () => {
       if (tunnel.should_run) {
-        tunnel.should_run = false;
         this.logger.log("Died unexpectedly!");
         this.send("schedule_reload");
       }
@@ -98,7 +97,7 @@ class Tunnel extends Simplex {
   }
 
   async replace_tunnel(new_tunnel) {
-    await this.replace_pipe.add(async () => {
+    await synchro(this.replace_lock)(async () => {
       if (new_tunnel == null) {
         this.logger.log("Shutting down tunnel...");
       } else {
@@ -111,21 +110,27 @@ class Tunnel extends Simplex {
       const tunnel = this.current_tunnel;
       if (tunnel != null) {
         tunnel.should_run = false;
-        const p = new Promise(r => tunnel.once("exit", r));
+        const p = new Promise((res, rej) => {
+          tunnel.once("exit", res);
+          tunnel.once("error", rej);
+        });
         tunnel.kill("SIGINT");
         const force = setTimeout(() => {
           this.logger.log("Force killing...");
           tunnel.kill("SIGKILL");
         }, 5000);
-        await p;
-        clearTimeout(force);
+        try {
+          await p;
+        } finally {
+          clearTimeout(force);
+        }
       }
       this.current_tunnel = new_tunnel;
       if (new_tunnel == null) {
         this.logger.log("Tunnel stopped");
         return;
       }
-      this.logger.log("Tunnel stopped and replaced");
+      this.logger.log("Tunnel stopped and replaced, new PID: " + new_tunnel.pid);
 
       this.logger.log("Setting up polling...");
       let logged_first = false;

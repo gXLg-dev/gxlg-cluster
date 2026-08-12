@@ -1,5 +1,4 @@
 const fs = require("fs");
-const Queue = require("promise-queue");
 
 const { Socket } = require("./socket.js");
 const { Panel } = require("./panel");
@@ -7,6 +6,7 @@ const { Service } = require("./service.js");
 const { Tunnel } = require("./tunnel.js");
 const { Worker } = require("./worker.js");
 const { PortAssigner } = require("./ports.js");
+const { createLock, synchro } = require("./synchro.js");
 
 const RELOAD_WAIT_TIME = 10000;
 const PORT_MIN = 18000;
@@ -29,8 +29,8 @@ class Manager {
 
     this.reload_timeout = null;
     this.stopping = false;
-    this.reload_pipe = new Queue(1, Infinity);
-    this.schedule_pipe = new Queue(1, Infinity);
+    this.reload_lock = createLock();
+    this.schedule_lock = createLock();
 
     this.init_promise = new Promise(res => {
       this.init_resolve = res;
@@ -113,7 +113,7 @@ class Manager {
   }
 
   async reload() {
-    await this.reload_pipe.add(async () => {
+    await synchro(this.reload_lock)(async () => {
       this.logger.log("Reloading...");
 
       // pairing algorithm
@@ -293,7 +293,7 @@ class Manager {
   async stop() {
     this.logger.log("Shutting down...");
 
-    await this.schedule_pipe.add(() => {
+    await synchro(this.schedule_lock)(() => {
       clearTimeout(this.reload_timeout);
       this.stopping = true;
     });

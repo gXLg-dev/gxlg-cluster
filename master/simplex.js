@@ -1,8 +1,8 @@
-const Queue = require("promise-queue");
+const { createLock, synchro } = require("./synchro.js");
 
 class Simplex {
   constructor() {
-    this.pipe = new Queue(1, Infinity);
+    this.lock = createLock();
     this.receivers = { };
   }
 
@@ -24,7 +24,9 @@ class Simplex {
     if (!(event in this.receivers)) {
       throw new Error(`The simplex doesn't have a receiver for the event "${event}"`);
     }
-    return this.pipe.add(async () => this.receivers[event](...args))
+    return await synchro(this.lock)(
+      async () => this.receivers[event](...args)
+    );
   }
 }
 
