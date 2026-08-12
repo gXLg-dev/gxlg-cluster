@@ -9,6 +9,60 @@ const { IngressGenerator } = require("./ingress.js");
 const { createLock, synchro } = require("./synchro.js");
 const raspi = require("../common/raspi.js");
 
+class TunnelInstance {
+  constructor(cf, logger, reloadCallback) {
+    this.logger = logger;
+    this.reloadCallback = reloadCallback;
+
+    const process = spawn(
+      cf,
+      [
+        "tunnel", "--config", ".tunnel/ingress.yml",
+        ...(raspi ? [] : ["--protocol", "http2"]), "run"
+      ],
+      { "detached": true }
+    );
+    this.process = process;
+
+    this.should_run = true;
+    this.running = true;
+    this.lock = createLock();
+    this.process.once("exit", async () => await this.handleStop());
+    this.process.once("error", async () => await this.handleStop());
+  }
+
+  async handleStop() {
+    await synchro(this.lock)(() => {
+      if (!this.should_run) return;
+      if (!this.running) return;
+      this.running = false;
+      this.logger.log("Died unexpectedly!");
+      this.reloadCallback();
+    });
+  }
+
+  async stop() {
+    await synchro(this.lock)(() => {
+      this.should_run = false;
+      if (!this.running) return;
+      const p = new Promise((res, rej) => {
+        this.process.once("exit", res);
+        this.process.once("error", rej);
+      });
+      this.process.kill("SIGINT");
+      const force = setTimeout(() => {
+        this.logger.log("Force killing...");
+        this.process.kill("SIGKILL");
+      }, 5000);
+      try {
+        await p;
+      } finally {
+        clearTimeout(force);
+      }
+    });
+  }
+}
+
 class Tunnel extends Simplex {
   constructor(config, io) {
     super();
@@ -72,21 +126,11 @@ class Tunnel extends Simplex {
 
     // start the tunnel
     this.logger.log("Starting new tunnel...");
-    const tunnel = spawn(
+    const tunnel = new TunnelInstance(
       this.cf,
-      [
-        "tunnel", "--config", ".tunnel/ingress.yml",
-        ...(raspi ? [] : ["--protocol", "http2"]), "run"
-      ],
-      { "detached": true }
+      this.logger,
+      () => this.send("schedule_reload")
     );
-    tunnel.should_run = true;
-    tunnel.once("exit", () => {
-      if (tunnel.should_run) {
-        this.logger.log("Died unexpectedly!");
-        this.send("schedule_reload");
-      }
-    });
 
     // replace the tunnel
     await this.replace_tunnel(tunnel);
@@ -109,21 +153,7 @@ class Tunnel extends Simplex {
 
       const tunnel = this.current_tunnel;
       if (tunnel != null) {
-        tunnel.should_run = false;
-        const p = new Promise((res, rej) => {
-          tunnel.once("exit", res);
-          tunnel.once("error", rej);
-        });
-        tunnel.kill("SIGINT");
-        const force = setTimeout(() => {
-          this.logger.log("Force killing...");
-          tunnel.kill("SIGKILL");
-        }, 5000);
-        try {
-          await p;
-        } finally {
-          clearTimeout(force);
-        }
+        await tunnel.stop();
       }
       this.current_tunnel = new_tunnel;
       if (new_tunnel == null) {
