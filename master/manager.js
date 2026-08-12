@@ -104,7 +104,7 @@ class Manager {
 
   // Receiver
   async schedule_reload() {
-    await this.schedule_pipe.add(() => {
+    await synchro(this.schedule_lock)(() => {
       this.logger.log("Scheduling reload...");
       clearTimeout(this.reload_timeout);
       if (this.stopping) return;
