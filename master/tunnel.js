@@ -42,7 +42,7 @@ class TunnelInstance {
   }
 
   async stop() {
-    await synchro(this.lock)(() => {
+    await synchro(this.lock)(async () => {
       this.shouldRun = false;
       if (!this.running) return;
       const p = new Promise((res, rej) => {
