@@ -72,6 +72,7 @@ socket.on("identify", () => {
 });
 
 socket.on("start_service", async (service, port, cb) => {
+  console.log("> start", service);
   await start(service, port);
   cb();
 });
@@ -93,6 +94,7 @@ async function start(service, port) {
     const i = spawn("bash", ["-c", [worker.install, ...config.dependencies].join(" ")]);
     const j = await new Promise(r => i.once("exit", c => r(c)));
     if (j != 0) {
+      console.error("Error from", service, "(dependencies)");
       socket.emit("error_service", service);
       return;
     }
@@ -102,6 +104,7 @@ async function start(service, port) {
       const i = spawn("bash", ["-c", s]);
       const j = await new Promise(r => i.once("exit", c => r(c)));
       if (j != 0) {
+        console.error("Error from", service, "(setup)");
         socket.emit("error_service", service);
         return;
       }
