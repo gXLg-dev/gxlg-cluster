@@ -167,7 +167,7 @@ class Manager {
         if (assignedWorker != bestWorker) {
           if (assignedWorker != null) {
             // stop service on old worker
-            await this.logger.log("Stopping", service.name, "on", bestWorker.id, "...");
+            await this.logger.log("Stopping", service.name, "on", assignedWorker.id, "...");
             await assignedWorker.stopService(service);
             await this.logger.log(service.name, "stopped");
             pairs.delete(assignedPair);
