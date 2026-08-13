@@ -32,11 +32,11 @@ class TunnelInstance {
   }
 
   async handleStop() {
-    await synchro(this.lock)(() => {
+    await synchro(this.lock)(async () => {
       if (!this.shouldRun) return;
       if (!this.running) return;
       this.running = false;
-      this.logger.log("Died unexpectedly!");
+      await this.logger.log("Died unexpectedly!");
       this.reloadCallback();
     });
   }
@@ -50,8 +50,8 @@ class TunnelInstance {
         this.process.once("error", rej);
       });
       this.process.kill("SIGINT");
-      const force = setTimeout(() => {
-        this.logger.log("Force killing...");
+      const force = setTimeout(async () => {
+        await this.logger.log("Force killing...");
         this.process.kill("SIGKILL");
       }, 5000);
       try {
@@ -95,7 +95,7 @@ class Tunnel extends Simplex {
         console.error(out.stderr.toString());
         throw new Error("Could not create the tunnel, please check if you are logged in!");
       } else {
-        this.logger.log(out.stdout.toString());
+        await this.logger.log(out.stdout.toString());
       }
     }
     this.uuid = JSON.parse(fs.readFileSync(".tunnel/tunnel.json")).TunnelID;
@@ -110,13 +110,13 @@ class Tunnel extends Simplex {
     generator.generateIngress();
 
     // update DNS records for services + panel and handle cache
-    this.logger.log("Updating DNS rules...");
+    await this.logger.log("Updating DNS rules...");
     try {
       for (const record of generator.getDirtyCacheRecords()) {
         await this.api.createRecord(record, this.uuid);
       }
     } catch (err) {
-      this.logger.log("Unstable internet connection!");
+      await this.logger.log("Unstable internet connection!");
       this.send("schedule_reload");
       return;
     }
@@ -125,7 +125,7 @@ class Tunnel extends Simplex {
     }
 
     // start the tunnel
-    this.logger.log("Starting new tunnel...");
+    await this.logger.log("Starting new tunnel...");
     const tunnel = new TunnelInstance(
       this.cf,
       this.logger,
@@ -143,13 +143,13 @@ class Tunnel extends Simplex {
   async replaceTunnel(newTunnel) {
     await synchro(this.replaceLock)(async () => {
       if (newTunnel == null) {
-        this.logger.log("Shutting down tunnel...");
+        await this.logger.log("Shutting down tunnel...");
       } else {
-        this.logger.log("Replacing old tunnel...");
+        await this.logger.log("Replacing old tunnel...");
       }
 
       clearInterval(this.tunnelInterval);
-      this.logger.log("Polling cleared, stopping tunnel...");
+      await this.logger.log("Polling cleared, stopping tunnel...");
 
       const tunnel = this.currentTunnel;
       if (tunnel != null) {
@@ -157,24 +157,24 @@ class Tunnel extends Simplex {
       }
       this.currentTunnel = newTunnel;
       if (newTunnel == null) {
-        this.logger.log("Tunnel stopped");
+        await this.logger.log("Tunnel stopped");
         return;
       }
-      this.logger.log("Tunnel stopped and replaced, new PID: " + newTunnel.process.pid);
+      await this.logger.log("Tunnel stopped and replaced, new PID: " + newTunnel.process.pid);
 
-      this.logger.log("Setting up polling...");
+      await this.logger.log("Setting up polling...");
       let loggedFirst = false;
       this.tunnelInterval = setInterval(async () => {
         try {
           if (!loggedFirst) {
-            this.logger.log("First polling initiated");
+            await this.logger.log("First polling initiated");
             loggedFirst = true;
           }
           await axios.get("https://" + this.panelRecord);
         } catch (e) {
           // if "frozen" aka Cloudflare can't reach the tunnel
           if (e.status == 530) {
-            this.logger.log("Frozen!");
+            await this.logger.log("Frozen!");
             this.send("schedule_reload");
           }
         }

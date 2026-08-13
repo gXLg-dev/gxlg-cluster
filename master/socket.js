@@ -29,11 +29,11 @@ class Socket extends Simplex {
         socket.disconnect(true);
         return;
       }
-      this.logger.log("Connected:", id);
+      await this.logger.log("Connected:", id);
       const ip = socket.handshake.address;
       const worker = new Worker(id, ip, socket);
-      socket.on("disconnect", () => {
-        this.logger.log("Disconnected:", id);
+      socket.on("disconnect", async () => {
+        await this.logger.log("Disconnected:", id);
         this.send("unregister_worker", worker);
       });
       socket.on(
@@ -53,7 +53,7 @@ class Socket extends Simplex {
   async stop() {
     clearInterval(this.syncInterval);
     await new Promise(r => this.server.close(r));
-    this.logger.log("Socket server stopped");
+    await this.logger.log("Socket server stopped");
   }
 
 }

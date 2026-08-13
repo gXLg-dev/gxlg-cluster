@@ -56,10 +56,10 @@ class Panel extends Simplex {
     });
   }
 
-  close() {
+  async close() {
     if (this.server != null) {
       this.server.close();
-      this.logger.log("Panel closed");
+      await this.logger.log("Panel closed");
     }
   }
 }

@@ -104,8 +104,8 @@ class Manager {
 
   // Receiver
   async scheduleReload() {
-    await synchro(this.scheduleLock)(() => {
-      this.logger.log("Scheduling reload...");
+    await synchro(this.scheduleLock)(async () => {
+      await this.logger.log("Scheduling reload...");
       clearTimeout(this.reloadTimeout);
       if (this.stopping) return;
       this.reloadTimeout = setTimeout(() => this.reload(), RELOAD_WAIT_TIME);
@@ -114,7 +114,7 @@ class Manager {
 
   async reload() {
     await synchro(this.reloadLock)(async () => {
-      this.logger.log("Reloading...");
+      await this.logger.log("Reloading...");
 
       // pairing algorithm
       const services = this.getActiveServices();
@@ -163,16 +163,16 @@ class Manager {
         if (assignedWorker != bestWorker) {
           if (assignedWorker != null) {
             // stop service on old worker
-            this.logger.log("Stopping", service.name, "on", bestWorker.id, "...");
+            await this.logger.log("Stopping", service.name, "on", bestWorker.id, "...");
             await assignedWorker.stopService(service);
-            this.logger.log(service.name, "stopped");
+            await this.logger.log(service.name, "stopped");
             pairs.delete(assignedPair);
           }
           if (bestWorker != null) {
             // start service on new worker
-            this.logger.log("Starting", service.name, "on", bestWorker.id, "...");
+            await this.logger.log("Starting", service.name, "on", bestWorker.id, "...");
             await bestWorker.startService(service);
-            this.logger.log(service.name, "started");
+            await this.logger.log(service.name, "started");
             pairs.add({ "worker": bestWorker, service });
           }
         }
@@ -192,7 +192,7 @@ class Manager {
       this.pairs = finalPairs;
       await this.tunnel.restart(this.pairs);
 
-      this.logger.log("Reloading complete!");
+      await this.logger.log("Reloading complete!");
     });
   }
 
@@ -230,8 +230,8 @@ class Manager {
   }
 
   // Receiver
-  errorService(service) {
-    this.logger.log("Error in service", service.name);
+  async errorService(service) {
+    await this.logger.log("Error in service", service.name);
     service.unregister();
     this.erroredServices.add(service);
     this.scheduleReload();
@@ -291,7 +291,7 @@ class Manager {
   }
 
   async stop() {
-    this.logger.log("Shutting down...");
+    await this.logger.log("Shutting down...");
 
     await synchro(this.scheduleLock)(() => {
       clearTimeout(this.reloadTimeout);
