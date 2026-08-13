@@ -47,7 +47,7 @@ class Manager {
       if (!fs.existsSync("./services/" + dir + "/gxlg-cluster.json")) {
         continue;
       }
-      this.loadService(dir);
+      await this.loadService(dir);
     }
 
     // 2. Set up communication
@@ -92,14 +92,18 @@ class Manager {
 
   // Receiver
   async registerWorker(worker) {
-    this.workers.add(worker);
-    this.scheduleReload();
+    await synchro(this.reloadLock)(async () => {
+      this.workers.add(worker);
+      this.scheduleReload();
+    });
   }
 
   // Receiver
   async unregisterWorker(worker) {
-    this.workers.delete(worker);
-    this.scheduleReload();
+    await synchro(this.reloadLock)(async () => {
+      this.workers.delete(worker);
+      this.scheduleReload();
+    });
   }
 
   // Receiver
@@ -201,40 +205,49 @@ class Manager {
   }
 
   // Receiver
-  loadService(name) {
-    this.services.add(new Service(name, this.portAssigner));
-    this.scheduleReload();
+  async loadService(name) {
+    await synchro(this.reloadLock)(async () => {
+      this.services.add(new Service(name, this.portAssigner));
+      this.scheduleReload();
+    });
   }
 
   // Receiver
   async restartService(service) {
-    const assignedWorker = this.pairs.values()
-      .find(p => p.service == service)?.worker;
+    await synchro(this.reloadLock)(async () => {
+      const assignedWorker = this.pairs.values()
+        .find(p => p.service == service)?.worker;
 
-    if (assignedWorker != null) {
-      await assignedWorker.stopService(service);
-      service.reload();
+      if (assignedWorker != null) {
+        await assignedWorker.stopService(service);
+        service.reload();
+        await assignedWorker.startService(service);
+      } else {
+        service.reload();
+      }
       this.erroredServices.delete(service);
-      await assignedWorker.startService(service);
-    }
-
-    this.scheduleReload();
+      this.scheduleReload();
+    });
   }
 
   // Receiver
-  removeService(service) {
-    service.unregister();
-    this.services.delete(service);
-    this.erroredServices.delete(service);
-    this.scheduleReload();
+  async removeService(service) {
+    await synchro(this.reloadLock)(async () => {
+      service.unregister();
+      this.services.delete(service);
+      this.erroredServices.delete(service);
+      this.scheduleReload();
+    });
   }
 
   // Receiver
   async errorService(service) {
-    await this.logger.log("Error in service", service.name);
-    service.unregister();
-    this.erroredServices.add(service);
-    this.scheduleReload();
+    await synchro(this.reloadLock)(async () => {
+      await this.logger.log("Error in service", service.name);
+      service.unregister();
+      this.erroredServices.add(service);
+      this.scheduleReload();
+    });
   }
 
   // Receiver

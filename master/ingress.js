@@ -3,7 +3,7 @@ const fs = require("fs");
 class IngressGenerator {
   constructor(uuid, panelRecord) {
     this.ingress = [
-      "tunnel: " + this.uuid,
+      "tunnel: " + uuid,
       "credentials-file: .tunnel/tunnel.json",
       "",
       "ingress:"
