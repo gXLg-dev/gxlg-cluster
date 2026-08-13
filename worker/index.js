@@ -101,7 +101,7 @@ async function start(service, port) {
   }
   if (config.setup) {
     for (const s of config.setup) {
-      const i = spawn("bash", ["-c", s]);
+      const i = spawn("bash", ["-c", s], { cwd });
       const j = await new Promise(r => i.once("exit", c => r(c)));
       if (j != 0) {
         console.error("Error from", service, "(setup)");
