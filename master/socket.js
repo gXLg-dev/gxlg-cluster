@@ -17,7 +17,7 @@ class Socket extends Simplex {
 
     this.logger = io.loggerFor("socket");
 
-    this.sync_interval = null;
+    this.syncInterval = null;
   }
 
   async start() {
@@ -44,14 +44,14 @@ class Socket extends Simplex {
       await this.send("register_worker", worker);
     });
 
-    this.sync_interval = setInterval(
+    this.syncInterval = setInterval(
       () => this.server.emit("sync", Date.now()),
       SYNC_TIME
     );
   }
 
   async stop() {
-    clearInterval(this.sync_interval);
+    clearInterval(this.syncInterval);
     await new Promise(r => this.server.close(r));
     this.logger.log("Socket server stopped");
   }

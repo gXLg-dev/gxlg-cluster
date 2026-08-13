@@ -24,7 +24,7 @@ class TunnelInstance {
     );
     this.process = process;
 
-    this.should_run = true;
+    this.shouldRun = true;
     this.running = true;
     this.lock = createLock();
     this.process.once("exit", async () => await this.handleStop());
@@ -33,7 +33,7 @@ class TunnelInstance {
 
   async handleStop() {
     await synchro(this.lock)(() => {
-      if (!this.should_run) return;
+      if (!this.shouldRun) return;
       if (!this.running) return;
       this.running = false;
       this.logger.log("Died unexpectedly!");
@@ -43,7 +43,7 @@ class TunnelInstance {
 
   async stop() {
     await synchro(this.lock)(() => {
-      this.should_run = false;
+      this.shouldRun = false;
       if (!this.running) return;
       const p = new Promise((res, rej) => {
         this.process.once("exit", res);
@@ -71,14 +71,14 @@ class Tunnel extends Simplex {
 
     this.cf = cloudflared ?? ("cloudflared" + (os.platform() == "win32" ? ".exe" : ""));
     this.api = new CloudflareAPI(cloudflare);
-    this.panel_record = panel.record;
+    this.panelRecord = panel.record;
 
     this.logger = io.loggerFor("tunnel");
 
     this.uuid = null;
-    this.tunnel_interval = null;
-    this.current_tunnel = null;
-    this.replace_lock = createLock();
+    this.tunnelInterval = null;
+    this.currentTunnel = null;
+    this.replaceLock = createLock();
   }
 
   async init() {
@@ -103,17 +103,17 @@ class Tunnel extends Simplex {
 
   async restart(pairs) {
     // generate new ingres
-    const generator = new IngressGenerator(this.uuid, this.panel_record);
+    const generator = new IngressGenerator(this.uuid, this.panelRecord);
     for (const { worker, service } of pairs) {
-      generator.add_service(service, worker);
+      generator.addService(service, worker);
     }
-    generator.generate_ingress();
+    generator.generateIngress();
 
     // update DNS records for services + panel and handle cache
     this.logger.log("Updating DNS rules...");
     try {
-      for (const record of generator.get_dirty_cache_records()) {
-        await this.api.create_record(record, this.uuid);
+      for (const record of generator.getDirtyCacheRecords()) {
+        await this.api.createRecord(record, this.uuid);
       }
     } catch (err) {
       this.logger.log("Unstable internet connection!");
@@ -121,7 +121,7 @@ class Tunnel extends Simplex {
       return;
     }
     for (const { worker, service } of pairs) {
-      service.confirm_cache_clear();
+      service.confirmCacheClear();
     }
 
     // start the tunnel
@@ -133,44 +133,44 @@ class Tunnel extends Simplex {
     );
 
     // replace the tunnel
-    await this.replace_tunnel(tunnel);
+    await this.replaceTunnel(tunnel);
   }
 
   async stop() {
-    await this.replace_tunnel(null);
+    await this.replaceTunnel(null);
   }
 
-  async replace_tunnel(new_tunnel) {
-    await synchro(this.replace_lock)(async () => {
-      if (new_tunnel == null) {
+  async replaceTunnel(newTunnel) {
+    await synchro(this.replaceLock)(async () => {
+      if (newTunnel == null) {
         this.logger.log("Shutting down tunnel...");
       } else {
         this.logger.log("Replacing old tunnel...");
       }
 
-      clearInterval(this.tunnel_interval);
+      clearInterval(this.tunnelInterval);
       this.logger.log("Polling cleared, stopping tunnel...");
 
-      const tunnel = this.current_tunnel;
+      const tunnel = this.currentTunnel;
       if (tunnel != null) {
         await tunnel.stop();
       }
-      this.current_tunnel = new_tunnel;
-      if (new_tunnel == null) {
+      this.currentTunnel = newTunnel;
+      if (newTunnel == null) {
         this.logger.log("Tunnel stopped");
         return;
       }
-      this.logger.log("Tunnel stopped and replaced, new PID: " + new_tunnel.pid);
+      this.logger.log("Tunnel stopped and replaced, new PID: " + newTunnel.process.pid);
 
       this.logger.log("Setting up polling...");
-      let logged_first = false;
-      this.tunnel_interval = setInterval(async () => {
+      let loggedFirst = false;
+      this.tunnelInterval = setInterval(async () => {
         try {
-          if (!logged_first) {
+          if (!loggedFirst) {
             this.logger.log("First polling initiated");
-            logged_first = true;
+            loggedFirst = true;
           }
-          await axios.get("https://" + this.panel_record);
+          await axios.get("https://" + this.panelRecord);
         } catch (e) {
           // if "frozen" aka Cloudflare can't reach the tunnel
           if (e.status == 530) {

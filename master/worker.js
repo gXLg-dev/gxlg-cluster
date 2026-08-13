@@ -5,13 +5,13 @@ class Worker {
     this.socket = socket;
   }
 
-  async start_service(service) {
+  async startService(service) {
     if (this.socket.connected) {
       await this.socket.emitWithAck("start_service", service.name, service.port);
     }
   }
 
-  async stop_service(service) {
+  async stopService(service) {
     if (this.socket.connected) {
       await this.socket.emitWithAck("stop_service", service.name);
     }

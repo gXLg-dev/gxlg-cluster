@@ -161,14 +161,14 @@ async function stop(service) {
   }
 }
 
-async function stop_all() {
+async function stopAll() {
   for (const service in services) {
     await stop(service);
   }
 }
 
 async function exit() {
-  await stop_all();
+  await stopAll();
   socket.close();
   blink = false;
   if (raspi) {
@@ -178,7 +178,7 @@ async function exit() {
 }
 
 socket.on("disconnect", async () => {
-  await stop_all();
+  await stopAll();
 });
 
 socket.on("shutdown", async () => {

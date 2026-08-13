@@ -20,7 +20,7 @@ class Auth {
     }
   }
 
-  set_cookie(res, password) {
+  setCookie(res, password) {
     const token = jwt.sign({ password }, this.secret, {
       "expiresIn": LOGIN_DURATION.toString()
     });

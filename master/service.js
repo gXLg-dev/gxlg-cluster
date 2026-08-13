@@ -1,14 +1,14 @@
 const fs = require("fs");
 
 class Service {
-  constructor(directory, port_assigner) {
+  constructor(directory, portAssigner) {
     this.name = directory;
-    this.port_assigner = port_assigner;
+    this.portAssigner = portAssigner;
 
     this.port = null;
     this.config = null;
 
-    this.cache_cleared = false;
+    this.cacheCleared = false;
     this.reload();
   }
 
@@ -16,24 +16,24 @@ class Service {
     this.config = JSON.parse(fs.readFileSync("./services/" + this.name + "/gxlg-cluster.json"));
     if (this.config.record) {
       if (!this.port) {
-        this.port = this.port_assigner.assign_port();
+        this.port = this.portAssigner.assignPort();
       }
-      this.cache_cleared = false;
+      this.cacheCleared = false;
     } else {
       if (this.port) {
-        this.port_assigner.release_port(this.port);
+        this.portAssigner.releasePort(this.port);
       }
       this.port = null;
     }
   }
 
-  confirm_cache_clear() {
-    this.cache_cleared = true;
+  confirmCacheClear() {
+    this.cacheCleared = true;
   }
 
   unregister() {
     if (this.port) {
-      this.port_assigner.release_port(this.port);
+      this.portAssigner.releasePort(this.port);
       this.port = null;
     }
   }

@@ -7,28 +7,28 @@ class PortAssigner {
     this.pool = new Set();
   }
 
-  fill_pool() {
+  fillPool() {
     if (this.frame == this.max) {
       throw new Error("PortAssigner ran out of free ports!");
     }
     const poolsize = this.poolsize;
-    const frame_end = Math.min(this.frame + poolsize, this.max);
-    for (let port = this.frame; port < frame_end; port++) {
+    const frameEnd = Math.min(this.frame + poolsize, this.max);
+    for (let port = this.frame; port < frameEnd; port++) {
       this.pool.add(port);
     }
-    this.frame = frame_end;
+    this.frame = frameEnd;
     this.poolsize = poolsize * 2;
   }
 
-  assign_port() {
-    if (this.pool.size == 0) this.fill_pool();
+  assignPort() {
+    if (this.pool.size == 0) this.fillPool();
 
     const port = this.pool.values().reduce((acc, v) => Math.min(acc, v), Infinity);
     this.pool.delete(port);
     return port;
   }
 
-  release_port(port) {
+  releasePort(port) {
     this.pool.add(port);
   }
 }

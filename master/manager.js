@@ -21,19 +21,19 @@ class Manager {
     this.panel = new Panel(config, io);
     this.tunnel = new Tunnel(config, io);
 
-    this.port_assigner = new PortAssigner(PORT_MIN, PORT_MAX);
+    this.portAssigner = new PortAssigner(PORT_MIN, PORT_MAX);
     this.workers = new Set();
     this.services = new Set();
-    this.errored_services = new Set();
+    this.erroredServices = new Set();
     this.pairs = new Set();
 
-    this.reload_timeout = null;
+    this.reloadTimeout = null;
     this.stopping = false;
-    this.reload_lock = createLock();
-    this.schedule_lock = createLock();
+    this.reloadLock = createLock();
+    this.scheduleLock = createLock();
 
-    this.init_promise = new Promise(res => {
-      this.init_resolve = res;
+    this.initPromise = new Promise(res => {
+      this.initResolve = res;
     });
   }
 
@@ -47,38 +47,38 @@ class Manager {
       if (!fs.existsSync("./services/" + dir + "/gxlg-cluster.json")) {
         continue;
       }
-      this.load_service(dir);
+      this.loadService(dir);
     }
 
     // 2. Set up communication
-    this.socket.receive("register_worker", w => this.register_worker(w));
-    this.socket.receive("unregister_worker", w => this.unregister_worker(w));
+    this.socket.receive("register_worker", w => this.registerWorker(w));
+    this.socket.receive("unregister_worker", w => this.unregisterWorker(w));
     this.socket.receive(
       "error_service",
-      n => this.error_service(this.find_service(n))
+      n => this.errorService(this.findService(n))
    );
 
-    this.panel.receive("query_services", () => this.query_services());
+    this.panel.receive("query_services", () => this.queryServices());
     this.panel.receive(
       "restart_service",
-      n => this.restart_service(this.find_service(n))
+      n => this.restartService(this.findService(n))
     );
-    this.panel.receive("add_service", s => this.load_service(s));
+    this.panel.receive("add_service", s => this.loadService(s));
     this.panel.receive(
       "remove_service",
-      n => this.remove_service(this.find_service(n))
+      n => this.removeService(this.findService(n))
     );
-    this.panel.receive("query_workers", () => this.query_workers());
+    this.panel.receive("query_workers", () => this.queryWorkers());
     this.panel.receive(
       "identify_worker",
-      id => this.find_worker(id).identify()
+      id => this.findWorker(id).identify()
     );
     this.panel.receive(
       "shutdown_worker",
-      id => this.find_worker(id).shutdown()
+      id => this.findWorker(id).shutdown()
     );
 
-    this.tunnel.receive("schedule_reload", () => this.schedule_reload());
+    this.tunnel.receive("schedule_reload", () => this.scheduleReload());
 
     // 3. Boot everything up
     await this.tunnel.init();
@@ -86,167 +86,167 @@ class Manager {
     await this.panel.start();
 
     // schedule initial reload
-    this.schedule_reload();
-    this.init_resolve();
+    this.scheduleReload();
+    this.initResolve();
   }
 
   // Receiver
-  async register_worker(worker) {
+  async registerWorker(worker) {
     this.workers.add(worker);
-    this.schedule_reload();
+    this.scheduleReload();
   }
 
   // Receiver
-  async unregister_worker(worker) {
+  async unregisterWorker(worker) {
     this.workers.delete(worker);
-    this.schedule_reload();
+    this.scheduleReload();
   }
 
   // Receiver
-  async schedule_reload() {
-    await synchro(this.schedule_lock)(() => {
+  async scheduleReload() {
+    await synchro(this.scheduleLock)(() => {
       this.logger.log("Scheduling reload...");
-      clearTimeout(this.reload_timeout);
+      clearTimeout(this.reloadTimeout);
       if (this.stopping) return;
-      this.reload_timeout = setTimeout(() => this.reload(), RELOAD_WAIT_TIME);
+      this.reloadTimeout = setTimeout(() => this.reload(), RELOAD_WAIT_TIME);
     });
   }
 
   async reload() {
-    await synchro(this.reload_lock)(async () => {
+    await synchro(this.reloadLock)(async () => {
       this.logger.log("Reloading...");
 
       // pairing algorithm
-      const services = this.get_active_services();
+      const services = this.getActiveServices();
       const workers = new Set(this.workers);
 
-      const total_ram = services.values()
+      const totalRam = services.values()
         .reduce((acc, s) => acc + s.config.ram, 0);
-      const worker_ram = this.config.worker.ram;
-      const avg_load = total_ram / workers.size;
+      const workerRam = this.config.worker.ram;
+      const avgLoad = totalRam / workers.size;
 
-      const ram_groups = { };
+      const ramGroups = { };
       for (const worker of workers) {
-        ram_groups[worker.id] = 0;
+        ramGroups[worker.id] = 0;
       }
 
       const pairs = new Set(this.pairs);
 
       for (const service of services) {
         const ram = service.config.ram;
-        const assigned_pair = pairs.values().find(p => p.service == service);
-        const assigned_worker = assigned_pair?.worker;
-        let best_worker = null;
-        let min_move = Infinity;
-        let min_devia = Infinity;
+        const assignedPair = pairs.values().find(p => p.service == service);
+        const assignedWorker = assignedPair?.worker;
+        let bestWorker = null;
+        let minMove = Infinity;
+        let minDevia = Infinity;
         for (const worker of workers) {
-          const new_total = ram_groups[worker.id] + ram;
-          if (new_total > worker_ram) {
+          const newTotal = ramGroups[worker.id] + ram;
+          if (newTotal > workerRam) {
             continue;
           }
-          const devia = new_total - avg_load;
+          const devia = newTotal - avgLoad;
 
           let move;
-          if (assigned_worker == worker) {
+          if (assignedWorker == worker) {
             move = 0;
-          } else if (assigned_worker == null) {
+          } else if (assignedWorker == null) {
             move = 1;
           } else {
             move = 2;
           }
-          if (move < min_move || (move == min_move && devia < min_devia)) {
-            min_move = move;
-            min_devia = devia;
-            best_worker = worker;
+          if (move < minMove || (move == minMove && devia < minDevia)) {
+            minMove = move;
+            minDevia = devia;
+            bestWorker = worker;
           }
         }
-        if (assigned_worker != best_worker) {
-          if (assigned_worker != null) {
+        if (assignedWorker != bestWorker) {
+          if (assignedWorker != null) {
             // stop service on old worker
-            this.logger.log("Stopping", service.name, "on", best_worker.id, "...");
-            await assigned_worker.stop_service(service);
+            this.logger.log("Stopping", service.name, "on", bestWorker.id, "...");
+            await assignedWorker.stopService(service);
             this.logger.log(service.name, "stopped");
-            pairs.delete(assigned_pair);
+            pairs.delete(assignedPair);
           }
-          if (best_worker != null) {
+          if (bestWorker != null) {
             // start service on new worker
-            this.logger.log("Starting", service.name, "on", best_worker.id, "...");
-            await best_worker.start_service(service);
+            this.logger.log("Starting", service.name, "on", bestWorker.id, "...");
+            await bestWorker.startService(service);
             this.logger.log(service.name, "started");
-            pairs.add({ "worker": best_worker, service });
+            pairs.add({ "worker": bestWorker, service });
           }
         }
-        if (best_worker != null) {
-          ram_groups[best_worker.id] += ram;
+        if (bestWorker != null) {
+          ramGroups[bestWorker.id] += ram;
         }
       }
       // stop abandoned services
-      const final_pairs = new Set();
+      const finalPairs = new Set();
       for (const { service, worker } of pairs) {
         if (this.services.has(service)) {
-          final_pairs.add({ service, worker });
+          finalPairs.add({ service, worker });
         } else {
-          await worker.stop_service(service);
+          await worker.stopService(service);
         }
       }
-      this.pairs = final_pairs;
+      this.pairs = finalPairs;
       await this.tunnel.restart(this.pairs);
 
       this.logger.log("Reloading complete!");
     });
   }
 
-  get_active_services() {
-    return this.services.difference(this.errored_services);
+  getActiveServices() {
+    return this.services.difference(this.erroredServices);
   }
 
   // Receiver
-  load_service(name) {
-    this.services.add(new Service(name, this.port_assigner));
-    this.schedule_reload();
+  loadService(name) {
+    this.services.add(new Service(name, this.portAssigner));
+    this.scheduleReload();
   }
 
   // Receiver
-  async restart_service(service) {
-    const assigned_worker = this.pairs.values()
+  async restartService(service) {
+    const assignedWorker = this.pairs.values()
       .find(p => p.service == service)?.worker;
 
-    if (assigned_worker != null) {
-      await assigned_worker.stop_service(service);
+    if (assignedWorker != null) {
+      await assignedWorker.stopService(service);
       service.reload();
-      this.errored_services.delete(service);
-      await assigned_worker.start_service(service);
+      this.erroredServices.delete(service);
+      await assignedWorker.startService(service);
     }
 
-    this.schedule_reload();
+    this.scheduleReload();
   }
 
   // Receiver
-  remove_service(service) {
+  removeService(service) {
     service.unregister();
     this.services.delete(service);
-    this.errored_services.delete(service);
-    this.schedule_reload();
+    this.erroredServices.delete(service);
+    this.scheduleReload();
   }
 
   // Receiver
-  error_service(service) {
+  errorService(service) {
     this.logger.log("Error in service", service.name);
     service.unregister();
-    this.errored_services.add(service);
-    this.schedule_reload();
+    this.erroredServices.add(service);
+    this.scheduleReload();
   }
 
   // Receiver
-  query_services() {
+  queryServices() {
     return this.services.values().map(s => {
-      const assigned_worker = this.pairs.values()
+      const assignedWorker = this.pairs.values()
         .find(p => p.service == s)?.worker;
 
       let status = 0;
-      if (this.errored_services.has(s)) {
+      if (this.erroredServices.has(s)) {
         status = 2;
-      } else if (assigned_worker != null) {
+      } else if (assignedWorker != null) {
         status = 1;
       }
 
@@ -255,14 +255,14 @@ class Manager {
         "port": s.port,
         "name": s.name,
         "ram": s.config.ram,
-        "worker": assigned_worker?.id,
+        "worker": assignedWorker?.id,
         "status": status
       };
     }).toArray();
   }
 
   // Receiver
-  async query_workers() {
+  async queryWorkers() {
     const ws = [];
     for (const w of this.workers) {
       const services = this.pairs.values()
@@ -282,23 +282,23 @@ class Manager {
     return ws;
   }
 
-  find_service(name) {
+  findService(name) {
     return this.services.values().find(s => s.name == name);
   }
 
-  find_worker(id) {
+  findWorker(id) {
     return this.workers.values().find(w => w.id == id);
   }
 
   async stop() {
     this.logger.log("Shutting down...");
 
-    await synchro(this.schedule_lock)(() => {
-      clearTimeout(this.reload_timeout);
+    await synchro(this.scheduleLock)(() => {
+      clearTimeout(this.reloadTimeout);
       this.stopping = true;
     });
 
-    await this.init_promise;
+    await this.initPromise;
     await this.tunnel.stop();
     await this.panel.close();
     await this.socket.stop();

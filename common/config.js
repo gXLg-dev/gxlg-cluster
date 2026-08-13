@@ -8,7 +8,7 @@ try {
 }
 
 const required = [
-  "cloudflare.api_key",
+  "cloudflare.apiKey",
   "cloudflare.email",
 
   "master.ip",

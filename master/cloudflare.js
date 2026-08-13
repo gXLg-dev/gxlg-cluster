@@ -6,17 +6,17 @@ class CloudflareAPI {
   constructor(cloudflare) {
     this.headers = {
       "Content-Type": "application/json",
-      "X-Auth-Key": cloudflare.api_key,
+      "X-Auth-Key": cloudflare.apiKey,
       "X-Auth-Email": cloudflare.email
     };
 
-    this.cached_zones = { };
-    this.cached_records = { };
+    this.cachedZones = { };
+    this.cachedRecords = { };
   }
 
-  async get_zone(domain) {
-    if (domain in this.cached_zones) {
-      return this.cached_zones[domain];
+  async getZone(domain) {
+    if (domain in this.cachedZones) {
+      return this.cachedZones[domain];
     }
     const headers = this.headers;
     const zones = { };
@@ -24,16 +24,16 @@ class CloudflareAPI {
     for (const entry of rz.data.result) {
       zones[entry.name] = entry.id;
     }
-    this.cached_zones = zones;
+    this.cachedZones = zones;
     if (!(domain in zones)) {
       throw new Error(`The domain "${domain}" does not belong to you!`);
     }
     return zones[domain];
   }
 
-  async get_record(zone, record) {
-    if (record in this.cached_records) {
-      return this.cached_records[record];
+  async getRecord(zone, record) {
+    if (record in this.cachedRecords) {
+      return this.cachedRecords[record];
     }
     const headers = this.headers;
     const records = { };
@@ -42,16 +42,16 @@ class CloudflareAPI {
     );
     for (const entry of rr.data.result) {
       if (entry.type == "CNAME") {
-        this.cached_records[entry.name] = entry.id;
+        this.cachedRecords[entry.name] = entry.id;
       }
     }
-    return this.cached_records[record] ?? null;
+    return this.cachedRecords[record] ?? null;
   }
 
-  async create_record(record, uuid) {
+  async createRecord(record, uuid) {
     const domain = record.split(".").slice(-2).join(".");
-    const zone = await this.get_zone(domain);
-    const recordId = await this.get_record(zone, record);
+    const zone = await this.getZone(domain);
+    const recordId = await this.getRecord(zone, record);
     const settings = {
       "type": "CNAME",
       "name": record,

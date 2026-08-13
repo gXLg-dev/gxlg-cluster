@@ -10,8 +10,8 @@ class Panel extends Simplex {
     super();
 
     const { panel, turnstile } = config;
-    this.panel_record = panel.record;
-    this.ts_plugin = nturnstile({ ...turnstile });
+    this.panelRecord = panel.record;
+    this.tsPlugin = nturnstile({ ...turnstile });
     this.auth = new Auth(config);
 
     this.logger = io.loggerFor("panel");
@@ -38,7 +38,7 @@ class Panel extends Simplex {
   async reload() {
     this.close();
     this.server = await nulls({
-      "plugins": [this.ts_plugin],
+      "plugins": [this.tsPlugin],
       "nulls": "master/panel/html",
       "uploads": false,
       "static": "master/panel/static",
@@ -46,11 +46,11 @@ class Panel extends Simplex {
       "hook": (req, res) => {
         const token = req.cookies["token.cluster"];
         req.auth = this.auth.check(token);
-        req.auth_api = this.auth;
+        req.authApi = this.auth;
         req.api = this.api;
       },
       "ready": () => this.logger.log("Panel up!"),
-      "domain": this.panel_record,
+      "domain": this.panelRecord,
       "proxies": 1,
       "redirects": { "/landing": () => "/" }
     });
