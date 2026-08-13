@@ -187,7 +187,7 @@ class Manager {
       // stop abandoned services
       const finalPairs = new Set();
       for (const { service, worker } of pairs) {
-        if (this.services.has(service)) {
+        if (services.has(service)) {
           finalPairs.add({ service, worker });
         } else {
           await worker.stopService(service);
