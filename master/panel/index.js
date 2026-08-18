@@ -23,6 +23,7 @@ class Panel extends Simplex {
 
   async start() {
     this.api.redirect("query_services", this);
+    this.api.redirect("query_status", this);
     this.api.redirect("restart_service", this);
     this.api.redirect("add_service", this);
     this.api.redirect("remove_service", this);

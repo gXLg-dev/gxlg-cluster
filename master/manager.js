@@ -59,6 +59,7 @@ class Manager {
    );
 
     this.panel.receive("query_services", () => this.queryServices());
+    this.panel.receive("query_status", () => this.queryStatus());
     this.panel.receive(
       "restart_service",
       n => this.restartService(this.findService(n))
@@ -272,6 +273,14 @@ class Manager {
         "status": status
       };
     }).toArray();
+  }
+
+  // Receiver
+  queryStatus() {
+    const active = this.services.difference(this.erroredServices).size;
+    const errors = this.erroredServices.size;
+    const workers = this.workers.size;
+    return { active, errors, workers };
   }
 
   // Receiver

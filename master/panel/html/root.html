@@ -45,7 +45,7 @@
 
       .nav {
         display: flex;
-        padding: 20px;
+        padding: 10px;
 
         background-color: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(12px);
@@ -101,10 +101,28 @@
 
   <body>
     <div class="nav">
-      <span><a href="/workers"><img src="/static/raspberry.png"> Workers</a></span>
-      <span><a href="/services"><img src="/static/service.png"> Services</a></span>
-      <span><a href="/tools"><img src="/static/tools.png"> Tools</a></span>
+      <span><a href="/status"><img src="/static/led.png"></a></span>
+      <span><a href="/workers"><img src="/static/raspberry.png"></a></span>
+      <span><a href="/services"><img src="/static/service.png"></a></span>
+      <span><a href="/tools"><img src="/static/tools.png"></a></span>
     </div>
-    <div class="content" null-container="req=>req.auth?({'/services':'services.html','/tools':'tools.html'}[req.path]??'workers.html'):'login.html'"></div>
+    <div class="content" null-container>
+      <script null-container>
+        return req => {
+          if (req.path == "/status") {
+            return "status.html";
+          }
+          if (req.auth) {
+            const pages = {
+              "/services": "services.html",
+              "/tools": "tools.html",
+              "/workers": "workers.html"
+            };
+            return pages[req.path] ?? "status.html";
+          }
+          return "login.html";
+        };
+      </script>
+    </div>
   </body>
 </html>
